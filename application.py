@@ -76,17 +76,26 @@ args = parser.parse_args()
  different code for client and server
 """
 
+#Check if the user try to run as both server and client
+if args.server and args.client:
+    #prints error message if the application is invoked with both client and server
+    print('Error: Cannot run as both client and server in the transfer application')
+
 ########################################################################
 ###########----------------SERVER CODE------------------################
 ########################################################################
-
+elif args.server:
 #Server: receives a file from a sender over DRTP/UDP
-
+    print('hei')
 
 ########################################################################
 ###########----------------CLIENT CODE------------------################
 ########################################################################
+elif args.client:
+    print('hei')
+##Client: reliably sends a file over
 
 
-
-#Client: reliably sends a file over
+#if no argument (nither -s or -c) where set
+else:
+    print('Error: you must run either in server or client mode')
