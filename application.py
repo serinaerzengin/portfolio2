@@ -8,13 +8,12 @@ import sys
 # ------------------------------------------------------------------------------#
 
 header_format = '!IIHH' # header size is always 12 bytes
-print (f'size of the header = {calcsize(header_format)}') # check header size
 
 def create_packet(seq, ack, flags, win, data): # parameters are sequence number, acknowledgment number, flags (4 bits), receiver window and application data
     header = pack(header_format, seq, ack, flags, win) # Create a header of 12
 
     packet = header + data # header is 12, and data is 1460. This packet should be 1472 bytes
-    print (f'packet containing header + data of size {len(packet)}') # show the length of the packet
+    #print (f'packet containing header + data of size {len(packet)}') # show the length of the packet
 
     return packet
 
@@ -68,6 +67,7 @@ def connection_establishment_server(serverSocket):
         ACK_syn_flagg, ACK_ack_flagg, ACK_fin_flagg = parse_flags(ACK_flagg)
         # check if this is a ACK message
         if ACK_ack_flagg == 4:
+            print("got ACK from client!")
             print("Connection established with ", client_Addr)
         else:
             print("Error: ACK not received!")
@@ -86,11 +86,11 @@ def server_main(bind_IPadress, port):
     except error:
         print("Bind failed. Error!!!")
         sys.exit()
-    print("server is ready to receive!!!")
+    print("Server is ready to receive!!!")
     
     while True:
         client_addr = connection_establishment_server(serverSocket)
-        print("connect with client", client_addr)
+        
 
             
 
@@ -116,8 +116,6 @@ def server_main(bind_IPadress, port):
 
 def connection_establishment_client(clientSocket, server_IP_adress, server_port):
 
-    
-
     # Create a empty packet with SYN flag
     data = b''
     sequence_number = 0
@@ -140,8 +138,9 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
         syn_ack_from_server, serverAddr = clientSocket.recvfrom(2048)
         
         # since the SYN ACK packet from server contains no data, we can just extract the header right away
-        seq, ack, flagg, win = parse_header(syn_ack_from_server.decode())
-        print(f'seq={seq}, ack={ack}, flags={flagg}, receiver-window={win}')
+        seq, ack, flagg, win = parse_header(syn_ack_from_server)
+        
+        #print(f'seq={seq}, ack={ack}, flags={flagg}, receiver-window={win}') # can delete this?
 
         # parse flagg part
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
@@ -153,13 +152,12 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
 
             # Send ACK packet to server
             ack_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-            clientSocket.sendto(ack_packet.encode(), (server_IP_adress, server_port))
-            print("Connection establish!")
+            clientSocket.sendto(ack_packet, (server_IP_adress, server_port))
+            print("Connection established!")
         else:
-            print("Error: SYN-ACK not received.")
-            raise socket.timeout('Did not receive SYN-ACK') # can delete this?
-    except socket.timeout:
-        print("Time out while waiting for SYN-ACK") 
+            raise socket.timeout("Error: SYN-ACK not received.") # can delete this?
+    except BaseException as e:
+        print("Time out while waiting for SYN-ACK", e) 
 
 def client_main(server_ip_adress, server_port):
     serverName = server_ip_adress
