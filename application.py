@@ -48,7 +48,7 @@ def parse_flags(flags): # get the values of syn, ack and fin
 
 def connection_establishment_server(serverSocket):
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) # check SYN packet from client
-    SYN_seq, SYN_ack, SYN_flagg, SYN_win = parse_header(SYN_from_client.decode())
+    SYN_seq, SYN_ack, SYN_flagg, SYN_win = parse_header(SYN_from_client)
 
     # check flags
     syn_flagg, ack_flagg, fin_flagg = parse_flags(SYN_flagg)
@@ -61,10 +61,10 @@ def connection_establishment_server(serverSocket):
         flags = 12 # SYN and ACK flags set here, and the decimal is 12
         # and send SYN-ACK back to client for confirmation
         SYN_ACK_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-        serverSocket.sendto(SYN_ACK_packet.encode(), client_Addr) # send SYN ACK to client
+        serverSocket.sendto(SYN_ACK_packet, client_Addr) # send SYN ACK to client
         # receive that last ACK from client to establish a connection
         ACK_from_client, client_Addr = serverSocket.recvfrom(2048)
-        ACK_flagg = parse_header(ACK_from_client.decode())[2] # only checking flagg
+        ACK_flagg = parse_header(ACK_from_client)[2] # only checking flagg
         ACK_syn_flagg, ACK_ack_flagg, ACK_fin_flagg = parse_flags(ACK_flagg)
         # check if this is a ACK message
         if ACK_ack_flagg == 4:
@@ -157,6 +157,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
             print("Connection establish!")
         else:
             print("Error: SYN-ACK not received.")
+            raise socket.timeout('Did not receive SYN-ACK') # can delete this?
     except socket.timeout:
         print("Time out while waiting for SYN-ACK") 
 
