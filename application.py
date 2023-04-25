@@ -90,6 +90,7 @@ def server_main(bind_IPadress, port):
     
     while True:
         client_addr = connection_establishment_server(serverSocket)
+        print("connect with client", client_addr)
 
             
 
@@ -113,10 +114,9 @@ def server_main(bind_IPadress, port):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(server_ip_adress, server_port):
-    serverName = server_ip_adress
-    serverPort = server_port
-    clientSocket = socket(AF_INET, SOCK_DGRAM)
+def connection_establishment_client(clientSocket, server_IP_adress, server_port):
+
+    
 
     # Create a empty packet with SYN flag
     data = b''
@@ -130,7 +130,7 @@ def connection_establishment_client(server_ip_adress, server_port):
     """ send a SYN packet to the server
     s.sendto(b'SYN', (serverName, serverPort))"""
 
-    clientSocket.sendto(say_hi_to_server.encode(), (serverName, serverPort))
+    clientSocket.sendto(say_hi_to_server, (server_IP_adress, server_port))
     
     # set timeout
     clientSocket.settimeout(0.5)
@@ -146,27 +146,67 @@ def connection_establishment_client(server_ip_adress, server_port):
         # parse flagg part
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
         
-        # check if SYN ACK packet from server has come. If yes, send ACK packet and confirm connection establishment
+        # check if SYN ACK packet from server has arrived. If yes, send ACK packet and confirm connection establishment
         if syn_flagg == 8 and ack_flagg == 4:
             print("got SYN ACK from server")
             flags = 4
 
             # Send ACK packet to server
             ack_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-            clientSocket.sendto(ack_packet.encode(), (serverName, serverPort))
+            clientSocket.sendto(ack_packet.encode(), (server_IP_adress, server_port))
             print("Connection establish!")
         else:
             print("Error: SYN-ACK not received.")
     except socket.timeout:
         print("Time out while waiting for SYN-ACK") 
 
+def client_main(server_ip_adress, server_port):
+    serverName = server_ip_adress
+    serverPort = server_port
+    clientSocket = socket(AF_INET, SOCK_DGRAM)
 
-    #clientSocket.connect((serverName, serverPort))
+    # establish a connection
+
+    connection_establishment_client(clientSocket, serverName, serverPort)
+
+
 
 
 
 # ------------------------------------------------------------------------------#
 #                               Done client side                                #
 # ------------------------------------------------------------------------------#
+def check_ip(address): # check if IP adress is correct
+    try:
+       val = ipaddress.ip_address(address)
+    except ValueError:
+       print(f"The IP address {address} is not valid")
+    return address
+
+parser = argparse.ArgumentParser(description="Argument parsing for server", epilog="This is all instructions we have")
+# ---------------------------------------------------------------------------- Create argument parsing for server --------------------------------------------------------
+parser.add_argument("-s", "--server", help="Enable the server mode", action='store_true')
+parser.add_argument("-b", "--bind", type=check_ip, help="IP address in dotted decimal notaion format", default="127.0.0.1")
+parser.add_argument("-p", "--port", type=int, help="Port number the server should listen to in server mode/ select server's port number in client mode", default=8088)
+# ---------------------------------------------------------------------------- Done argument parsing for server -----------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------- Create argument parsing for client ---------------------------------------------------------
+parser.add_argument("-c", "--client", help="Enable the client mode", action='store_true')
+parser.add_argument('-I', "--serverip", type=check_ip, help="IP adress of the server", default="127.0.0.1")
+# ---------------------------------------------------------------------------- Done argument parsing for client ------------------------------------------------------------
+
+args = parser.parse_args()
+
+
+if args.server is False and args.client is False: # if none of -c or -s is used
+    print("Error: you must run either in server or client mode")
+    sys.exit()
+elif args.server and args.client: # if both modes are used
+    print("Error: you must run either in server or client mode cc")
+    sys.exit()
+else: # Pass the conditions. This is when one of the modes is activated
+    if args.server:
+        server_main(args.bind, args.port)
+    else:
+        client_main(args.serverip, args.port)
