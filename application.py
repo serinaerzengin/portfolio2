@@ -85,14 +85,70 @@ if args.server and args.client:
 ###########----------------SERVER CODE------------------################
 ########################################################################
 elif args.server:
-#Server: receives a file from a sender over DRTP/UDP
-    print('hei')
+    
+    #portnumber from the input argument
+    serverport = args.port
+    #ip argument
+    serverip = args.bind
+
+    #Create UDP socket
+    #Standard function in python -AF_INET indicates that the underlying network is using IPv4. -SOCK_DGRAM indicates that it is a UDP socket
+    serverSocket= socket(AF_INET, SOCK_DGRAM)
+
+    #Tries to bind socket to port number
+    try:
+    #Python-code that binds a socket to a spesific IP-adress and port. Sets up the socket to listen to the IP-adress and ports set by the user
+        serverSocket.bind((serverip, serverport)) 
+    except:
+        #if the bind failed we print error message
+        print("Bind failed. Error : ")
+        sys.exit() #exit the program
+
+    #create message to tell that the server is ready to receive
+    message='Server is ready to receive'
+    top_bottom_line = "-" * len(message) #string multiplication is used to create a string with the same number of hyphens as the length of the message
+    #Prints the message 
+    print(f"{top_bottom_line}\n{message}\n{top_bottom_line}")
+
+    #FLODHEST : MÅ VI HA WHILE? 
+    #Read from UDP socket into message, getting client's address (client IP and port)
+    message, clientAdress = serverSocket.recvfrom(2048)
+
+    #FLODHEST : HER MÅ VI DECODE OG SJEKKE OM DET ER SYN MELDING BLA BLA BLA
+    modifiedMessage = message.decode().upper()
+
+    #FLODHEST : MÅ SENDE SYN:ACK TILBAKE BLA BLA BLA
+    melding='blablabla'
+    serverSocket.sendto(melding.encode(), clientAdress)
+
+    #Server: receives a file from a sender over DRTP/UDP
+   
+
 
 ########################################################################
 ###########----------------CLIENT CODE------------------################
 ########################################################################
 elif args.client:
-    print('hei')
+    
+    #arguments we send when we run client
+    clientport = args.port
+    serverip = args.serverip
+
+    #Create UDP socket
+    #Standard function in python -AF_INET indicates that the underlying network is using IPv4. -SOCK_DGRAM indicates that it is a UDP socket
+    clientSocket =  socket(AF_INET, SOCK_DGRAM)
+    #FLODHEST : MÅ SENDE SYN
+    message='SYN'
+
+    #Attach server name, port to message; send into socket
+    clientSocket.sendto(message.encode(), serverip, clientport)
+
+    #read reply from socket
+    #FLODHEST : MÅ SJEKKE OM VI FÅR ACK:SYN tilbake
+    modifiedMessage, serverAddress = clientSocket.recvfrom(2048)
+
+    clientSocket.close()
+
 ##Client: reliably sends a file over
 
 
