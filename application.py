@@ -36,7 +36,24 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
+def stop_and_wait_client(file_sent):
+    
+    data_list = []
+    with open(str(file_sent), 'rb') as file:
+        while True:
+            data = file.read(1460) # take only 1460 bytes from picture
+            data_list.append(data) # add to an array
+            if not data: # break if there is no more data
+                break
+    
+    for i in range(len(data_list)):
+        
+        
+        
 
+
+
+def stop_and_wait_server():
 
 
 
