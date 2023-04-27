@@ -36,8 +36,25 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
+def split_file():
+    packets_to_send = []
+
+    with open(image, 'rb') as f:
+
+        while True:
 
 
+
+# ------------------------------------------------------------------------------#
+#                                 TCP sending methods                           #
+# ------------------------------------------------------------------------------#
+
+def client_stopandwait(clientSocket, server_address):
+    return 0
+
+# ------------------------------------------------------------------------------#
+#                                  End of TCP methods                           #
+# ------------------------------------------------------------------------------#
 
 
 
@@ -186,6 +203,8 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
                 raise socket.timeout("Error: SYN-ACK not received.") # can delete this?
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
+    
+    client_stopandwait(clientSocket,serverAddr)
 
 def client_main(server_ip_adress, server_port):
     serverName = server_ip_adress
