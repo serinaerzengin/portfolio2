@@ -44,13 +44,49 @@ def file_splitting(list, file_sent):
             if not data: # break if there is no more data
                 break
 
-def stop_and_wait_client(file_sent):
+def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
     
-    data_list = []
+    data_list = [] # Array list contains data packet. Each data packet has a length of 1460
     file_splitting(data_list, file_sent)
     sequence_id = 0
 
-    for i in range(len(data_list)):
+    while sequence_id < len(data_list):
+
+        # create new packet with 1460 length
+        data = data_list[sequence_id]
+        sequence_number = sequence_id
+        acknowledgement_number = 0
+        window = 0
+        flags = 0
+
+        # send packets til server
+        my_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+        clientSocket.sendto(my_packet, (server_IPadress, server_port))
+
+        # set timeout
+        clientSocket.settimeout(0.5)
+
+        # wait for an ACK from server to confirm packet
+
+        try:
+            
+            packet_from_Server, serverAddr = clientSocket.recvfrom(2048)
+
+            seq, ack, flagg, win = parse_header(packet_from_Server)
+
+            # check if this is the right ACK packet
+            if sequence_number == seq:
+
+                # parse flags
+                syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+                if ack_flagg == 4:
+                    # sequence number oker for neste pakke
+                    sequence_id += 1
+                
+        except BaseException as e:
+            print("Time out while waiting for ACK! Resend packet now", e)
+
         
         
         
