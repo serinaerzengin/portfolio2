@@ -234,25 +234,25 @@ group1= parser.add_argument_group('Server argumentns')
 #Creates an argument group for client arguments
 group2 = parser.add_argument_group('Client arguments')
 
-#--------------------------------------------SERVER ARGUMENTS----------------------------------------------------------------#
+#------------------------------------------SERVER ARGUMENTS--------------------------------------------------------------------#
 group1.add_argument('-s', '--server', action='store_true', help='use this flag to run the program in server mode')
 #bind argument with a check using the check_ip function implemented over
 group1.add_argument('-b', '--bind', type=check_ip, default='127.0.0.1', help='IP-adress of the servers interface')
-# ------------------------------------ Done argument for server --------------------------------------------------------------#
+# ------------------------------------ Done argument for server ---------------------------------------------------------------#
 
 
-#------------------------------------------- CLIENT ARGUMENTS ----------------------------------------------------------------#
+#----------------------------------------- CLIENT ARGUMENTS -------------------------------------------------------------------#
 group2.add_argument('-c', '--client', action='store_true', help='use this flag to run the program in client mode')
 #serverip argument with a check using the checkip function implemented over
 group2.add_argument('-I', '--serverip', default='127.0.0.1',type=check_ip, help='allows the user to select the IP address of the server' )
-# --------------------------------------- Done argument for Client ------------------------------------------------------------#
+# ------------------------------------ Done argument for Client ---------------------------------------------------------------#
 
 
 #------------------------------ARGUMENTS THAT ARE ALLOWED TO USE ON BOTH SERVER AND CLIENT-------------------------------------#
 #port argument with a check using the check_port function implemented over
 parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port number the server should listen to in server mode/ select server's port number in client mode")
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
-# --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
+# --------------------------------------- Done argument for Client/server -----------------------------------------------------#
 
 #Parse the arguments
 args = parser.parse_args()
