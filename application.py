@@ -46,25 +46,37 @@ def parse_flags(flags): # get the values of syn, ack and fin
 # ------------------------------------------------------------------------------#
 
 def connection_establishment_server(serverSocket):
-    SYN_from_client, client_Addr = serverSocket.recvfrom(2048) # check SYN packet from client
+
+    #Receives SYN packet from client
+    SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
+
+    #parsing the header
     SYN_seq, SYN_ack, SYN_flagg, SYN_win = parse_header(SYN_from_client)
 
     # check flags
     syn_flagg, ack_flagg, fin_flagg = parse_flags(SYN_flagg)
     if syn_flagg == 8: # if this is a SYN packet
+
         # create SYN ACK message
         data = b''
         sequence_number = 0
         acknowledgment_number = 0
         window = 0
         flags = 12 # SYN and ACK flags set here, and the decimal is 12
+
         # and send SYN-ACK back to client for confirmation
         SYN_ACK_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
         serverSocket.sendto(SYN_ACK_packet, client_Addr) # send SYN ACK to client
+
         # receive that last ACK from client to establish a connection
         ACK_from_client, client_Addr = serverSocket.recvfrom(2048)
-        ACK_flagg = parse_header(ACK_from_client)[2] # only checking flagg
+
+        #parsing the header, only to get flags
+        ACK_flagg = parse_header(ACK_from_client)[2] # only getting flags
+
+        #parsing the flags
         ACK_syn_flagg, ACK_ack_flagg, ACK_fin_flagg = parse_flags(ACK_flagg)
+
         # check if this is a ACK message
         if ACK_ack_flagg == 4:
             print("got ACK from client!")
@@ -73,7 +85,7 @@ def connection_establishment_server(serverSocket):
             print("Error: ACK not received!")
     else:
         print("Error: SYN not received!")
-    return client_Addr
+    
 
 def server_main(bind_IPadress, port):
     server_host = bind_IPadress
@@ -88,8 +100,8 @@ def server_main(bind_IPadress, port):
         sys.exit()
     print("Server is ready to receive!!!")
     
-    while True:
-        client_addr = connection_establishment_server(serverSocket)
+    #sending socket to method thats establishing connection with client.
+    connection_establishment_server(serverSocket)
         
 
             
@@ -125,24 +137,21 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
     say_hi_to_server = create_packet(sequence_number, acknowledgment_number, flags, window, data)
     # done creating packet here
 
-    """ send a SYN packet to the server
-    s.sendto(b'SYN', (serverName, serverPort))"""
-
+    #Sends packet to server
     clientSocket.sendto(say_hi_to_server, (server_IP_adress, server_port))
     
-    # set timeout
+    #set timeout
     clientSocket.settimeout(0.5)
 
     # wait for a response from the server
     try:
+        #reveices packer from server
         syn_ack_from_server, serverAddr = clientSocket.recvfrom(2048)
         
         # since the SYN ACK packet from server contains no data, we can just extract the header right away
         seq, ack, flagg, win = parse_header(syn_ack_from_server)
-        
-        #print(f'seq={seq}, ack={ack}, flags={flagg}, receiver-window={win}') # can delete this?
 
-        # parse flagg part
+        # parse flags
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
         
         # check if SYN ACK packet from server has arrived. If yes, send ACK packet and confirm connection establishment
@@ -162,10 +171,11 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
 def client_main(server_ip_adress, server_port):
     serverName = server_ip_adress
     serverPort = server_port
+
+    # establish a UDP socket
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
-    # establish a connection
-
+    # sending the arguements in this method to establish a connection with server
     connection_establishment_client(clientSocket, serverName, serverPort)
 
 
