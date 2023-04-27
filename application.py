@@ -182,6 +182,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
                 # Send ACK packet to server
                 clientSocket.sendto(ack_packet, (server_IP_adress, server_port))
                 print("Connection established!")
+
             else:
                 raise socket.timeout("Error: SYN-ACK not received.") # can delete this?
     except BaseException as e:
@@ -211,21 +212,51 @@ def check_ip(address): # check if IP adress is correct
        print(f"The IP address {address} is not valid")
     return address
 
-parser = argparse.ArgumentParser(description="Argument parsing for server", epilog="This is all instructions we have")
-# ---------------------------------------------------------------------------- Create argument parsing for server --------------------------------------------------------
-parser.add_argument("-s", "--server", help="Enable the server mode", action='store_true')
-parser.add_argument("-b", "--bind", type=check_ip, help="IP address in dotted decimal notaion format", default="127.0.0.1")
-parser.add_argument("-p", "--port", type=int, help="Port number the server should listen to in server mode/ select server's port number in client mode", default=8088)
-# ---------------------------------------------------------------------------- Done argument parsing for server -----------------------------------------------------------
+#check if port is valid. 
+def check_port(val):
+    try:
+        #we try to convert the input value to an integer
+        value = int(val) 
+    except ValueError:
+        #If it's not possible to convert to integer, we raise an ArgumentTypeError with an error message
+        raise argparse.ArgumentTypeError("String was input, but expected an integer")
+    #also check if the portnumber is in the valid range. if not we print error message.
+    if(value<1024 or value>65535):
+        print('it is not a valid port - port must be an integer and in the range 1024-65535')
+        sys.exit() #Exit the program if not valid
+    return value #if the portnumer is valid we return.
 
-parser.add_argument("-r", "--modus", type=str, help="Choose one of the modus!")
+#Create an ArgumentParser instance  
+parser= argparse.ArgumentParser(description="A client/server transfer application")
 
-# ---------------------------------------------------------------------------- Create argument parsing for client ---------------------------------------------------------
-parser.add_argument("-c", "--client", help="Enable the client mode", action='store_true')
-parser.add_argument('-I', "--serverip", type=check_ip, help="IP adress of the server", default="127.0.0.1")
-# ---------------------------------------------------------------------------- Done argument parsing for client ------------------------------------------------------------
+#Create an argument group for server arguments
+group1= parser.add_argument_group('Server argumentns')
+#Creates an argument group for client arguments
+group2 = parser.add_argument_group('Client arguments')
 
+#--------------------------------------------SERVER ARGUMENTS----------------------------------------------------------------#
+group1.add_argument('-s', '--server', action='store_true', help='use this flag to run the program in server mode')
+#bind argument with a check using the check_ip function implemented over
+group1.add_argument('-b', '--bind', type=check_ip, default='127.0.0.1', help='IP-adress of the servers interface')
+# ------------------------------------ Done argument for server --------------------------------------------------------------#
+
+
+#------------------------------------------- CLIENT ARGUMENTS ----------------------------------------------------------------#
+group2.add_argument('-c', '--client', action='store_true', help='use this flag to run the program in client mode')
+#serverip argument with a check using the checkip function implemented over
+group2.add_argument('-I', '--serverip', default='127.0.0.1',type=check_ip, help='allows the user to select the IP address of the server' )
+# --------------------------------------- Done argument for Client ------------------------------------------------------------#
+
+
+#------------------------------ARGUMENTS THAT ARE ALLOWED TO USE ON BOTH SERVER AND CLIENT-------------------------------------#
+#port argument with a check using the check_port function implemented over
+parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port number the server should listen to in server mode/ select server's port number in client mode")
+parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
+# --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
+
+#Parse the arguments
 args = parser.parse_args()
+
 
 
 if args.server is False and args.client is False: # if none of -c or -s is used
