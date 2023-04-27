@@ -39,9 +39,12 @@ def parse_flags(flags): # get the values of syn, ack and fin
 def split_file():
     packets_to_send = []
 
-    with open(image, 'rb') as f:
-
+    with open("fil.txt", 'rb') as f:
         while True:
+            packet = f.read(1460)
+            packets_to_send.append(packet)
+            
+            
 
 
 
