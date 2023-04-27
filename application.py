@@ -140,16 +140,9 @@ def handleServer(port, IP):
     try:
         #receives the SYN from client
         SYN_msg, client_address = serverSocket.recvfrom(2048) # check SYN packet from client
-        SYN_msg = SYN_msg.decode
-
-        #Take the header from the SYN
-        header_from_SYN = SYN_msg[:12]
-
-        seq, ack, flags, win = parse_header(header_from_SYN)
         
-
         #Parse the header
-        seq, ack, flags, win = parse_header (header_from_SYN)
+        seq, ack, flags, win = parse_header(SYN_msg.decode)
         print(f'seq={seq}, ack={ack}, flags={flags}, recevier-window={win}')
 
         #parse the flag field
