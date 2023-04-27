@@ -13,7 +13,7 @@ def create_packet(seq, ack, flags, win, data): # parameters are sequence number,
     header = pack(header_format, seq, ack, flags, win) # Create a header of 12
 
     packet = header + data # header is 12, and data is 1460. This packet should be 1472 bytes
-    #print (f'packet containing header + data of size {len(packet)}') # show the length of the packet
+    #print (f'packet containing header + data of size {len(packet)}') # show the length of the packe
 
     return packet
 
