@@ -43,9 +43,37 @@ def split_file():
         while True:
             packet = f.read(1460)
             packets_to_send.append(packet)
-            
-            
+            def stop_and_wait_client(file_sent):
+    
+    data_list = []
+    with open(str(file_sent), 'rb') as file:
+        while True:
+            data = file.read(1460) # take only 1460 bytes from picture
+            data_list.append(data) # add to an array
+            if not data: # break if there is no more data
+                break
+    
+    for i in range(len(data_list)):
+        
+                    
+        
 
+
+# ------------------------------------------------------------------------------#
+#                                 TCP sending methods                           #
+# ------------------------------------------------------------------------------#
+
+def client_stopandwait(clientSocket, server_address):
+    return 0
+
+# ------------------------------------------------------------------------------#
+#                                  End of TCP methods                           #
+# ------------------------------------------------------------------------------#
+
+
+
+
+def stop_and_wait_server():
 
 
 # ------------------------------------------------------------------------------#
@@ -154,7 +182,7 @@ def server_main(bind_IPadress, port):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(clientSocket, server_IP_adress, server_port):
+def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus):
 
     # Create a empty packet with SYN flag
     data = b''
@@ -202,15 +230,23 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
                 # Send ACK packet to server
                 clientSocket.sendto(ack_packet, (server_IP_adress, server_port))
                 print("Connection established!")
-
+            
+                #which modus the user wants to run in
+                if modus == "SAW":
+                    print('Må kalle funksjon')
+                elif modus == "GBN":
+                    print('Må kalle funksjon')
+                else:
+                    print('Må kalle funksjon')
+               
+                
+        
             else:
                 raise socket.timeout("Error: SYN-ACK not received.") # can delete this?
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
-    
-    client_stopandwait(clientSocket,serverAddr)
 
-def client_main(server_ip_adress, server_port):
+def client_main(server_ip_adress, server_port, modus):
     serverName = server_ip_adress
     serverPort = server_port
 
@@ -218,7 +254,7 @@ def client_main(server_ip_adress, server_port):
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # sending the arguements in this method to establish a connection with server
-    connection_establishment_client(clientSocket, serverName, serverPort)
+    connection_establishment_client(clientSocket, serverName, serverPort, modus)
 
 
 
@@ -256,39 +292,46 @@ group1= parser.add_argument_group('Server argumentns')
 #Creates an argument group for client arguments
 group2 = parser.add_argument_group('Client arguments')
 
-#--------------------------------------------SERVER ARGUMENTS----------------------------------------------------------------#
+#------------------------------------------SERVER ARGUMENTS--------------------------------------------------------------------#
 group1.add_argument('-s', '--server', action='store_true', help='use this flag to run the program in server mode')
 #bind argument with a check using the check_ip function implemented over
 group1.add_argument('-b', '--bind', type=check_ip, default='127.0.0.1', help='IP-adress of the servers interface')
-# ------------------------------------ Done argument for server --------------------------------------------------------------#
+# ------------------------------------ Done argument for server ---------------------------------------------------------------#
 
 
-#------------------------------------------- CLIENT ARGUMENTS ----------------------------------------------------------------#
+#----------------------------------------- CLIENT ARGUMENTS -------------------------------------------------------------------#
 group2.add_argument('-c', '--client', action='store_true', help='use this flag to run the program in client mode')
 #serverip argument with a check using the checkip function implemented over
 group2.add_argument('-I', '--serverip', default='127.0.0.1',type=check_ip, help='allows the user to select the IP address of the server' )
-# --------------------------------------- Done argument for Client ------------------------------------------------------------#
+# ------------------------------------ Done argument for Client ---------------------------------------------------------------#
 
 
 #------------------------------ARGUMENTS THAT ARE ALLOWED TO USE ON BOTH SERVER AND CLIENT-------------------------------------#
 #port argument with a check using the check_port function implemented over
 parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port number the server should listen to in server mode/ select server's port number in client mode")
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
+
+parser.add_argument("-f", "--file", help="File name ")
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
+
 
 #Parse the arguments
 args = parser.parse_args()
-
 
 
 if args.server is False and args.client is False: # if none of -c or -s is used
     print("Error: you must run either in server or client mode")
     sys.exit()
 elif args.server and args.client: # if both modes are used
-    print("Error: you must run either in server or client mode cc")
+    print("Error: you must run either in server or client mode")
     sys.exit()
+elif args.modus is None:
+    print("Error: you must choose modus")
+elif args.file is None:
+    print("Error: you must choose file argument")
+
 else: # Pass the conditions. This is when one of the modes is activated
     if args.server:
         server_main(args.bind, args.port)
     else:
-        client_main(args.serverip, args.port)
+        client_main(args.serverip, args.port, args.modus)
