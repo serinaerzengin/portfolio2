@@ -36,23 +36,21 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
-def split_file():
-    packets_to_send = []
-
-    with open("fil.txt", 'rb') as f:
-        while True:
-            packet = f.read(1460)
-            packets_to_send.append(packet)
-            def stop_and_wait_client(file_sent):
-    
-    data_list = []
+def file_splitting(list, file_sent):
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
-            data_list.append(data) # add to an array
+            list.append(data) # add to an array
             if not data: # break if there is no more data
                 break
+
+
+def stop_and_wait_client(file_sent):
     
+    data_list = []
+    file_splitting(data_list, file_sent)
+    sequence_id = 0
+
     for i in range(len(data_list)):
         
                     
