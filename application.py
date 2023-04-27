@@ -60,7 +60,7 @@ def connection_establishment_server(serverSocket):
         # create SYN ACK message
         data = b''
         sequence_number = 0
-        acknowledgment_number = 0
+        acknowledgment_number = SYN_seq
         window = 0
         flags = 12 # SYN and ACK flags set here, and the decimal is 12
 
@@ -68,21 +68,29 @@ def connection_establishment_server(serverSocket):
         SYN_ACK_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
         serverSocket.sendto(SYN_ACK_packet, client_Addr) # send SYN ACK to client
 
+
         # receive that last ACK from client to establish a connection
         ACK_from_client, client_Addr = serverSocket.recvfrom(2048)
 
         #parsing the header, only to get flags
-        ACK_flagg = parse_header(ACK_from_client)[2] # only getting flags
+        ACK_seq, ACK_ack, ACK_flagg, ACK_win = parse_header(ACK_from_client) # only getting flags
 
-        #parsing the flags
-        ACK_syn_flagg, ACK_ack_flagg, ACK_fin_flagg = parse_flags(ACK_flagg)
+        #Checks if its acknowledgement form the right packet
+        if(ACK_ack==sequence_number):
 
-        # check if this is a ACK message
-        if ACK_ack_flagg == 4:
-            print("got ACK from client!")
-            print("Connection established with ", client_Addr)
+            #parsing the flags
+            ACK_syn_flagg, ACK_ack_flagg, ACK_fin_flagg = parse_flags(ACK_flagg)
+
+            # check if this is a ACK message
+            if ACK_ack_flagg == 4:
+                print("got ACK from client!")
+                print("Connection established with ", client_Addr)
+            else:
+                print("Error: ACK not received!")
+
         else:
-            print("Error: ACK not received!")
+            print("Error, Ack_number does not match")
+
     else:
         print("Error: SYN not received!")
     
@@ -151,20 +159,31 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port)
         # since the SYN ACK packet from server contains no data, we can just extract the header right away
         seq, ack, flagg, win = parse_header(syn_ack_from_server)
 
-        # parse flags
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-        
-        # check if SYN ACK packet from server has arrived. If yes, send ACK packet and confirm connection establishment
-        if syn_flagg == 8 and ack_flagg == 4:
-            print("got SYN ACK from server")
-            flags = 4
+        # Checks if the acknowledgement is for the right packet. 
+        if sequence_number == ack:
 
-            # Send ACK packet to server
-            ack_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
-            clientSocket.sendto(ack_packet, (server_IP_adress, server_port))
-            print("Connection established!")
-        else:
-            raise socket.timeout("Error: SYN-ACK not received.") # can delete this?
+            # parse flags
+            syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+            
+            # check if SYN ACK packet from server has arrived. If yes, send ACK packet and confirm connection establishment
+            if syn_flagg == 8 and ack_flagg == 4:
+                print("got SYN ACK from server")
+
+                # Sets a new sequence number and replies with ack number
+                sequence_number=int(sequence_number)+1
+                acknowledgment_number=seq
+
+                #set the flag to represent ack_flag on
+                flags = 4
+
+                #creates an ACK packet
+                ack_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                
+                # Send ACK packet to server
+                clientSocket.sendto(ack_packet, (server_IP_adress, server_port))
+                print("Connection established!")
+            else:
+                raise socket.timeout("Error: SYN-ACK not received.") # can delete this?
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
 
