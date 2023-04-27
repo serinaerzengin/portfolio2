@@ -189,6 +189,7 @@ parser.add_argument("-b", "--bind", type=check_ip, help="IP address in dotted de
 parser.add_argument("-p", "--port", type=int, help="Port number the server should listen to in server mode/ select server's port number in client mode", default=8088)
 # ---------------------------------------------------------------------------- Done argument parsing for server -----------------------------------------------------------
 
+parser.add_argument("-r", "--modus", type=str, help="Choose one of the modus!")
 
 # ---------------------------------------------------------------------------- Create argument parsing for client ---------------------------------------------------------
 parser.add_argument("-c", "--client", help="Enable the client mode", action='store_true')
