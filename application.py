@@ -53,23 +53,6 @@ def join_file(list, filename):
     return filename
 
 
-def stop_and_wait_client(file_sent):
-    
-    data_list = []
-    file_splitting(data_list, file_sent)
-    sequence_id = 0
-
-    for i in range(len(data_list)):
-        return
-        
-                    
-        
-
-
-
-def stop_and_wait_server():
-    return 0
-
 
 
 # ------------------------------------------------------------------------------#
@@ -137,12 +120,8 @@ def GBN_client(window, filename, clientSocket, server_Address):
                 #reveices packer from server
                 ack_from_server, serverAddr = clientSocket.recvfrom(2048)
 
-                # Extracting the header
-                header = ack_from_server[:12]
-
-                
-                # since the SYN ACK packet from server contains no data, we can just extract the header right away
-                seq, ack, flagg, win = parse_header(header)
+                # parsing the header since the ack packet should be with no data
+                seq, ack, flagg, win = parse_header(ack_from_server)
 
                 # Checks if the acknowledgement is for the right packet. 
                 # The ack should be for the first packet in the window. 
@@ -166,9 +145,77 @@ def GBN_client(window, filename, clientSocket, server_Address):
 
         #Burde jeg heller kode med å kalle på metoder som sender pakker også ha en while som konstant lytter etter ack?
         # Og dersom acken aldri kommer blir det timeout? 
+
+    seq_number=0
+    acknowledgement_number=0
+    flagg=2
+    emptydata=b''
+    fin_packet = create_packet(seq_number,acknowledgement_number,flagg,window,emptydata)
+    clientSocket.sendto(fin_packet,server_Address) 
+
+    #METHOD TO CLOSE CONNECTION??
+
+    
         
 
-def GBN_server(window, filename, clientSocket): #do we need window?
+def GBN_server(window, filename, serverSocket): #do we need window?
+    data_list = []
+
+    emptydata=b''
+    sequence_number = 0
+    ack_number = None
+    window = window
+    flagg = 0
+    last_ack_number = -1
+
+    packet, client_address = serverSocket.recvfrom(2048)
+
+    while True:
+                
+        # Extracting the header
+        header = packet[:12]
+
+        # parsing the header
+        seq, ack, flagg, win = parse_header(header)
+
+        #parsing the flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+        # check if this is a fin message
+        if fin_flagg == 2:
+            print("Finished receivind packets")
+            break
+
+        #checks to se if packets come in the right order.
+        if seq == (last_ack_number+1): 
+            # extract the data from the header
+            data = packet[12:]
+
+            # Puts the data in the list
+            data_list.append(data)
+
+        # Check to make sure to send ack if:
+            # The seq already has been recv and added to the list
+            # if the seq is the newest packet, aka last_ack + 1
+        if seq <= last_ack_number+1:
+            ack_number = seq
+            flagg = 4 # sets the ack flag
+
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+
+    filename = join_file(data_list,filename)
+    print(filename.decode())
+
+
+    # METHOD TO CLOSE CONNECTION?
+
+
+
+
+
+
 
 
 # ------------------------------------------------------------------------------#
