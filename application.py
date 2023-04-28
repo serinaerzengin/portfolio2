@@ -143,6 +143,8 @@ def stop_and_wait_server(serverSocket):
             if len(data_from_msg) > 0 and len(data_from_msg) <= 1460: # if packet is ok
                 seq_number_of_server += 1
                 total_received += len(data_from_msg) # testing only. Can delete
+                data_received.append(data_from_msg)
+
                 # send ack
                 data = b''
                 sequence_number = seq_number_of_server
