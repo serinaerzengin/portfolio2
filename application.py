@@ -94,9 +94,11 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
 
                     if last_ack_from_server == ack: # if ack number of this new packet is equal to ack of the last received sequence -> DUPACK
                         sequence_id = sequence_id # resends packet
+                        print(f"resend packet {sequence_id}")
 
                     else: # if this is not a DUPACK
                         # get ready for new packet
+                        print(f"packet {sequence_id} sent!!!")
                         sequence_id += 1 # sequence number oker for neste pakke
                         last_seq_from_client = sequence_number # store sequence number of last message
                         last_ack_from_server = ack # store ack of the last received sequence
@@ -155,6 +157,7 @@ def stop_and_wait_server(serverSocket):
 
                 # and send ACK back to client for confirmation
                 ACK_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                print(f"return packet {sequence_number} !!!")
                 serverSocket.sendto(ACK_packet, client_Addr) # send SYN ACK to client
             else: # if packet is not OK. Send DUPACK
                 data = b''
@@ -416,7 +419,7 @@ elif args.modus is None:
 elif args.file is None:
     print("Error: you must choose file argument")
 
-else: # Pass the conditions. This is when one of the modes is activated
+else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
         server_main(args.bind, args.port)
     else:
