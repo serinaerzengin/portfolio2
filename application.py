@@ -84,47 +84,49 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
     next_in_window = 0
     window=5
     print('Lengden av data listen: '+str(len(data_list)))
+    
+    data = data_list[sequence_id]
+    seq_number = sequence_id
+    acknowledgement_number = 0
+    #window = 0 # sende med window = 0 eller window = window? Er det bare server som skal sende window?
+    flags = 0
+    
+    
     while sequence_id < len(data_list):
-        data = data_list[sequence_id]
         seq_number = sequence_id
-        acknowledgement_number = 0
-        window = 0 # sende med window = 0 eller window = window? Er det bare server som skal sende window?
-        flags = 0
-
-        #creating packet, and sending
-        packet = create_packet(seq_number,acknowledgement_number,flags,window,data)
-        clientSocket.sendto(packet,server_Address)
-        
-        #updates the sequence number
-        seq_number+=1
-
-        #updates the window
-        next_in_window+=1
-
-        
-        packets_in_window = first_in_window-next_in_window
+        next_in_window=first_in_window
+        packets_in_window = next_in_window - first_in_window
 
         #Tries to send the rest of the packets in the window, before getting ack from the first in window. 
+        #print('Packets in window: '+str(packets_in_window)+' window: '+str(window)+'\n first in window: ' +str(first_in_window)+ ', next in window:'+ str(next_in_window)+'\nseq number: '+str(seq_number))
+        
         while packets_in_window < window and seq_number < len(data_list):
 
             #The while arguments ^:
             #Can only send packets if there is room in the window
             #Cannot send data if there is no data left in the list
+            if seq_number == 16 and test:
+                print('\n\n Dropper pakke nr 16')
+                seq_number+=1
+                test = False
+            else:    
+                # Creating and sending packet
+                data = data_list[seq_number] #getting packets to send in the right order
+                packet = create_packet(seq_number,acknowledgement_number,flags,window,data) 
+                clientSocket.sendto(packet,server_Address) 
+                print('Sendt seq: '+str(seq_number))
 
-            # Creating and sending packet
-            data = data_list[seq_number] #getting packets to send in the right order
-            packet = create_packet(seq_number,acknowledgement_number,flags,window,data) 
-            clientSocket.sendto(packet,server_Address) 
+                #After sending packet, we update:
+                # whats nest posision in the window
+                # how many packets in the window and 
+                # the seq_number of the next packet
+                next_in_window+=1
+                
+                packets_in_window =  next_in_window - first_in_window
+                
+                seq_number +=1
 
-            #After sending packet, we update:
-            # whats nest posision in the window
-            # how many packets in the window and 
-            # the seq_number of the next packet
-            next_in_window+=1
-            packets_in_window = first_in_window - next_in_window
-            seq_number +=1
-
-        # The window should be full - now we wait on ack to move the window
+            # The window should be full - now we wait on ack to move the window
         
         print('TRYING TO GET ACK FROM SERVER')
         # Try to receive an ack for the sent packets
@@ -186,21 +188,21 @@ def GBN_server(window, filename, serverSocket, test): #do we need window?
     ack_number = 0
     window = window
     flagg = 0
-    last_ack_number = -1
+    last_packet_added = -1
+    last_ack_sent = -1
 
     
 
     while True:
 
         packet, client_address = serverSocket.recvfrom(2048)
-        print('\nReceived a packet!')
                 
         # Extracting the header
         header = packet[:12]
 
         # parsing the header
         seq, ack, flagg, win = parse_header(header)
-        print('Packet with seq: '+str(seq))
+        print('\nReceived a packet with seq: '+str(seq))
 
         #parsing the flags
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
@@ -210,38 +212,65 @@ def GBN_server(window, filename, serverSocket, test): #do we need window?
             print("Finished receivind packets")
             break
 
-        #checks to se if packets come in the right order.
-        if seq == (last_ack_number+1): 
+       
+        # A packet should not be added if the ack of the pacet before got sent.
+        # therefore this if checks:    
+        #   1. to se if packets come in the right order
+        #   2. to se if the packet has been added before
+        # This if also makes sure each packet in the list has sent an ack before another packet gets added
+        if seq == last_packet_added+1 and last_packet_added == last_ack_sent: 
+            
             # extract the data from the header
             data = packet[12:]
-            print('The data came in the right order!')
+        
 
             # Puts the data in the list
             data_list.append(data)
+            print('Added packet nr '+str(seq)+' to the list')
 
-        # Check to make sure to send ack if:
-            # The seq already has been recv and added to the list
-            # if the seq is the newest packet, aka last_ack + 1
-        if seq <= last_ack_number+1:
-            ack_number = seq
-            flagg = 4 # sets the ack flag
+            #update last packet added to the list
+            last_packet_added+=1
 
-            #creates and send ACK-msg to server
-            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
-            serverSocket.sendto(ack_packet, client_address)
-            sequence_number+=1
-            last_ack_number+=1
-            print('Sent ack packet: '+str(ack_number))
+         # If at packet nr. 13, we skip sending the ack (the ack got lost).
+        if seq == 13 and test:
+            print('\n\nDroppet ack nr 13\n\n')
+            
+            # set to false so that the skip only happens once.
+            test = False
+            
+        else:
+            # Check to make sure to send ack if:
+                # If the packet already has been recv and added to the list
+            # If so an ack is sent to inform client that the packet is received
+            if seq <= last_ack_sent+1:
+                
+                # Arguments in ack packet.
+                ack_number = seq
+                flagg = 4 # sets the ack flag
 
+                #creates and send ACK-msg to server
+                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+                serverSocket.sendto(ack_packet, client_address)
+                sequence_number+=1
 
+                last_ack_sent=ack_number
+                
+                print('Sent ack packet: '+str(ack_number))
+                print('')
+            
+            #sets test to false so packet number 5 does not get skipped. 
+            
+
+"""
     filename = join_file(data_list,filename)
     
     #Tekst fil skrive ut
-    """
+    
     f = open(filename, 'r')
     file_content = f.read()
     print(file_content)
-    """
+    
+    
 
     try:
         # Åpne bildet
@@ -252,7 +281,7 @@ def GBN_server(window, filename, serverSocket, test): #do we need window?
 
     except IOError:
         print("Kan ikke åpne bildefilen")
-        
+        """
 
     # METHOD TO CLOSE CONNECTION?
 
@@ -272,6 +301,9 @@ def GBN_server(window, filename, serverSocket, test): #do we need window?
 # ------------------------------------------------------------------------------#
 
 def connection_establishment_server(serverSocket, modus, filename, test):
+    if test:
+        print('Test er true')
+
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
 

@@ -1,33 +1,540 @@
-Hei
-Prerequisites
-We have already covered the required concepts in our lectures, labs, and mandatory assignments which you need for this portfolio. Should you be missing lectures and lab sessions, it is your own responsibility to catch up to the competence level that you are supposed to get it from the lectures and lab sessions. Also, try to make good use of the lectures and lab sessions because we will cover some important concepts there.
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
 
-Overview
-You will implement a simple transport protocol - DATA2410 Reliable Transport Protocol (DRTP) that provides reliable data delivery on top of UDP. Your protocol will ensure that data is reliably delivered in-order without missing data or duplicates.
+på på på på på på på på på på på på på på på på på på på på på på på på på på
 
-In this portfolio, you will write code that will reliably transfer file between two nodes in the network. You MUST implement two programs:
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
 
-DRTP that will provide reliable connection over UDP
-A file transer application:
-A simple file transfer client
-A simple file transfer server
-Implement a reliable data transfer protocol (DRTP)
-You must use UDP as the transport protocol and add reliability on top of that. You are not supposed to use any other transport protocol which already provides reliability (e.g., TCP). You must construct the packets and acknowledgements. You must establish the connection and gracefully close when the transfer is finished.
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
 
-A file transfer application
-You will implement a file transfer application (application.py) where you will use -c to invoke a client and -s to invoke a server.
+på på på på på på på på på på på på på på på på på på på på på på på på på på
 
-A simple file transfer server
-A simple file transfer server will receive a file (e.g. safi.jpg) from a client through its DRTP/UDP socket and write it to the file system (e.g., safi-recv.jpg ). The IP address, the port number on which the server listens and the reliablity function are given as arguments. NOTE: the port number of the server must also be the port number that the client will use to connect.
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
 
-The server/receiver can be invoked with:
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
 
-python3 application.py -s -i <ip_address> -p <port_number> -r <reliable method>
+på på på på på på på på på på på på på på på på på på på på på på på på på på
 
-If I want to skip an ack to trigger retransmission at the sender-side:
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
 
-python3 application.py -s -i <ip_address> -p <port_number> -r <reliable method> -t <test_case>
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
 
-e.g., test_case = skip_ack, reliable method=gbn
+på på på på på på på på på på på på på på på på på på på på på på på på på på
 
-A simple file transfer client
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
+Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei Hei 
+
+på på på på på på på på på på på på på på på på på på på på på på på på på på
+
+deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg deg 
+
