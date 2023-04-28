@@ -36,13 +36,15 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
-def file_splitting(list, file_sent):
+def file_splitting(file_sent):
+    list = []
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
             list.append(data) # add to an array
             if not data: # break if there is no more data
                 break
+    return list
 
 def join_file(list, filename):
     with open(filename, 'wb') as f:
@@ -70,7 +72,12 @@ def stop_and_wait_server():
 
 
 
+def GBN(window, filename):
+    data_list = file_splitting(filename)
 
+    
+
+    
 
 
 # ------------------------------------------------------------------------------#
