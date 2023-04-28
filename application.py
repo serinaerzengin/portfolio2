@@ -167,6 +167,7 @@ def stop_and_wait_server(serverSocket):
                 serverSocket.sendto(ACK_packet, client_Addr) # send SYN ACK to client
         except:
             print("Have not received any packet from client")
+    
             
 
 
