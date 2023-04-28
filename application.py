@@ -45,6 +45,12 @@ def file_splitting(list, file_sent):
             if not data: # break if there is no more data
                 break
 
+def join_file(list, filename):
+    with open(filename, 'wb') as f:
+        for part in list:
+            f.write(part)
+    return filename
+
 def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
     
     data_list = [] # Array list contains data packet. Each data packet has a length of 1460
@@ -116,6 +122,7 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
 
 
 def stop_and_wait_server(serverSocket):
+    data_received = []
     total_received = 0
     seq_number_of_server = -1
     last_ACK_msg = 0
