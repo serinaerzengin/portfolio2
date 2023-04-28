@@ -76,7 +76,7 @@ def join_file(list, filename):
 
 
 
-def GBN_client(window, filename, clientSocket, server_Address):
+def GBN_client(window, filename, clientSocket, server_Address, test):
     data_list = file_splitting(filename)
 
     sequence_id = 0
@@ -178,7 +178,7 @@ def GBN_client(window, filename, clientSocket, server_Address):
     
         
 
-def GBN_server(window, filename, serverSocket): #do we need window?
+def GBN_server(window, filename, serverSocket, test): #do we need window?
     data_list = []
 
     emptydata=b''
@@ -271,7 +271,7 @@ def GBN_server(window, filename, serverSocket): #do we need window?
 #                                 Server side                                   #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_server(serverSocket, modus, filename):
+def connection_establishment_server(serverSocket, modus, filename, test):
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
 
@@ -311,7 +311,7 @@ def connection_establishment_server(serverSocket, modus, filename):
                 print("got ACK from client!")
                 print("Connection established with ", client_Addr)
                 if 'GBN' in modus:
-                    GBN_server(window,filename,serverSocket)
+                    GBN_server(window,filename,serverSocket, test)
             else:
                 print("Error: ACK not received!")
 
@@ -323,7 +323,7 @@ def connection_establishment_server(serverSocket, modus, filename):
 
     
 
-def server_main(bind_IPadress, port, modus, filename):
+def server_main(bind_IPadress, port, modus, filename, test):
     server_host = bind_IPadress
     server_port = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -337,7 +337,7 @@ def server_main(bind_IPadress, port, modus, filename):
     print("Server is ready to receive!!!")
     
     #sending socket to method thats establishing connection with client.
-    connection_establishment_server(serverSocket, modus, filename)
+    connection_establishment_server(serverSocket, modus, filename, test)
         
 
             
@@ -362,7 +362,7 @@ def server_main(bind_IPadress, port, modus, filename):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, filename):
+def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, filename, test):
 
     # Create a empty packet with SYN flag
     data = b''
@@ -415,7 +415,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
                 if modus == "SAW":
                     print('Må kalle funksjon')
                 elif modus == "GBN":
-                    GBN_client(window,filename,clientSocket,serverAddr)
+                    GBN_client(window,filename,clientSocket,serverAddr, test)
                 else:
                     print('Må kalle funksjon')
                
@@ -426,7 +426,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
 
-def client_main(server_ip_adress, server_port, modus, filename):
+def client_main(server_ip_adress, server_port, modus, filename, test):
     serverName = server_ip_adress
     serverPort = server_port
 
@@ -434,7 +434,7 @@ def client_main(server_ip_adress, server_port, modus, filename):
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # sending the arguements in this method to establish a connection with server
-    connection_establishment_client(clientSocket, serverName, serverPort, modus, filename)
+    connection_establishment_client(clientSocket, serverName, serverPort, modus, filename, test)
 
 
 
@@ -492,6 +492,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
+parser.add_argument('-t','--test', action='store_true', help='use this flag to run the program test mode which looses a packet')
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
@@ -512,6 +513,6 @@ elif args.file is None:
 
 else: # Pass the conditions. This is when one of the modes is activated
     if args.server:
-        server_main(args.bind, args.port, args.modus, args.file)
+        server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
-        client_main(args.serverip, args.port, args.modus, args.file)
+        client_main(args.serverip, args.port, args.modus, args.file, args.test)
