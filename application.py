@@ -44,6 +44,12 @@ def file_splitting(list, file_sent):
             if not data: # break if there is no more data
                 break
 
+def join_file(list, filename):
+    with open(filename, 'wb') as f:
+        for part in list:
+            f.write(part)
+    return filename
+
 
 def stop_and_wait_client(file_sent):
     
@@ -61,6 +67,8 @@ def stop_and_wait_client(file_sent):
 
 def stop_and_wait_server():
     return 0
+
+
 
 
 
