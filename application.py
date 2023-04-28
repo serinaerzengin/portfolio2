@@ -247,6 +247,7 @@ def server_main(bind_IPadress, port):
     
     #sending socket to method thats establishing connection with client.
     connection_establishment_server(serverSocket)
+    stop_and_wait_server(serverSocket)
         
 
             
@@ -271,7 +272,7 @@ def server_main(bind_IPadress, port):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus):
+def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, file_sent):
 
     # Create a empty packet with SYN flag
     data = b''
@@ -304,8 +305,6 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
             
             # check if SYN ACK packet from server has arrived. If yes, send ACK packet and confirm connection establishment
             if syn_flagg == 8 and ack_flagg == 4:
-                print("got SYN ACK from server")
-
                 # Sets a new sequence number and replies with ack number
                 sequence_number=int(sequence_number)+1
                 acknowledgment_number=seq
@@ -322,7 +321,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
             
                 #which modus the user wants to run in
                 if modus == "SAW":
-                    print('Må kalle funksjon')
+                    stop_and_wait_client(file_sent, clientSocket, server_IP_adress, server_port)
                 elif modus == "GBN":
                     print('Må kalle funksjon')
                 else:
@@ -335,7 +334,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
 
-def client_main(server_ip_adress, server_port, modus):
+def client_main(server_ip_adress, server_port, modus, filesent):
     serverName = server_ip_adress
     serverPort = server_port
 
@@ -343,7 +342,7 @@ def client_main(server_ip_adress, server_port, modus):
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # sending the arguements in this method to establish a connection with server
-    connection_establishment_client(clientSocket, serverName, serverPort, modus)
+    connection_establishment_client(clientSocket, serverName, serverPort, modus, filesent)
 
 
 
@@ -416,11 +415,11 @@ elif args.server and args.client: # if both modes are used
     sys.exit()
 elif args.modus is None:
     print("Error: you must choose modus")
-elif args.file is None:
+elif args.file is None: # 
     print("Error: you must choose file argument")
 
 else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
         server_main(args.bind, args.port)
     else:
-        client_main(args.serverip, args.port, args.modus)
+        client_main(args.serverip, args.port, args.modus, args.file)
