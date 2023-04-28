@@ -52,16 +52,15 @@ def stop_and_wait_client(file_sent):
     sequence_id = 0
 
     for i in range(len(data_list)):
+        return
         
                     
         
 
 
 
-
-
-
 def stop_and_wait_server():
+    return 0
 
 
 
@@ -71,7 +70,6 @@ def stop_and_wait_server():
 # ------------------------------------------------------------------------------#
 
 def connection_establishment_server(serverSocket):
-
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
 
@@ -115,9 +113,10 @@ def connection_establishment_server(serverSocket):
 
         else:
             print("Error, Ack_number does not match")
-
     else:
         print("Error: SYN not received!")
+    
+
     
 
 def server_main(bind_IPadress, port):
