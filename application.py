@@ -72,10 +72,79 @@ def stop_and_wait_server():
 
 
 
-def GBN(window, filename):
+def GBN_client(window, filename, clientSocket, server_Address):
     data_list = file_splitting(filename)
 
-    
+    sequence_id = 0
+    first_in_window = 0
+    next_in_window = 0
+    window=5
+
+    while sequence_id < len(data_list):
+        data = data_list[sequence_id]
+        seq_number = sequence_id
+        acknowledgement_number = 0
+        window = 0 # sende med window = 0 eller window = window? Er det bare server som skal sende window?
+        flags = 0
+
+        packet = create_packet(seq_number,acknowledgement_number,flags,window,data)
+        clientSocket.sendto(packet,server_Address)
+        next_in_window+=1
+        clientSocket.settimeout(0.5) #Vil denne gjelde receiving av pakke nede i den 2. whilen eller hvis den stoppe før?
+        
+
+        try:
+            packets_in_window = first_in_window-next_in_window
+
+            #Tries to send the rest of the packets in the window, before getting ack from the first in window. 
+            while packets_in_window < window and seq_number < len(data_list):
+
+                #Making the new packet to send
+                data = data_list[seq_number]
+                packet = create_packet(seq_number,acknowledgement_number,flags,window,data)
+                clientSocket.sendto(packet,server_Address)
+
+                #After sending packet, we update:
+                # whats nest posision in the window
+                # how many packets in the window and 
+                # the seq_number of the next packet
+                next_in_window+=1
+                packets_in_window = first_in_window - next_in_window
+                seq_number +=1
+                
+            while True: #Receiving ack from server
+
+                #reveices packer from server
+                syn_ack_from_server, serverAddr = clientSocket.recvfrom(2048)
+                
+                # since the SYN ACK packet from server contains no data, we can just extract the header right away
+                seq, ack, flagg, win = parse_header(syn_ack_from_server)
+
+                # Checks if the acknowledgement is for the right packet. 
+                # The ack should be for the first packet in the window. 
+                if  first_in_window == ack:
+                    # parse flags
+                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+                    if ack_flagg == 4:
+                        # sequence number oker for neste pakke
+                        sequence_id += 1 #the next in sequence_id will be the next packet to be send
+                        first_in_window+=1 # we move the window
+                else:
+                    break
+
+        except TimeoutError:
+            print("Error: Timeout")
+
+
+        #Burde jeg heller kode med å kalle på metoder som sender pakker også ha en while som konstant lytter etter ack?
+        # Og dersom acken aldri kommer blir det timeout? 
+        
+        
+
+
+
+
 
     
 
