@@ -3,6 +3,7 @@ from struct import *
 import argparse
 import ipaddress
 import sys
+import random
 # ------------------------------------------------------------------------------#
 #                                   Header handling                             #
 # ------------------------------------------------------------------------------#
@@ -49,7 +50,10 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
     data_list = [] # Array list contains data packet. Each data packet has a length of 1460
     file_splitting(data_list, file_sent)
     sequence_id = 0
-
+    
+    last_seq_from_client = 0
+    last_ack_from_server = 0
+    total_sent = 0 # testing purpose
     while sequence_id < len(data_list):
 
         # create new packet with 1460 length
@@ -74,18 +78,36 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
 
             seq, ack, flagg, win = parse_header(packet_from_Server)
 
-            # check if this is the right ACK packet
-            if sequence_number == seq:
+            # check if sender receives the right message 
+            if sequence_number == seq: # if sender1 gets receiver1 
 
                 # parse flags
                 syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
 
-                if ack_flagg == 4:
-                    # sequence number oker for neste pakke
-                    sequence_id += 1
+                if ack_flagg == 4: # check if this is ACK message
+
+                    if last_ack_from_server == ack: # if ack number of this new packet is equal to ack of the last received sequence -> DUPACK
+                        sequence_id = sequence_id # resends packet
+
+                    else: # if this is not a DUPACK
+                        # get ready for new packet
+                        sequence_id += 1 # sequence number oker for neste pakke
+                        last_seq_from_client = sequence_number # store sequence number of last message
+                        last_ack_from_server = ack # store ack of the last received sequence
+                        total_sent += len(data)
+                else: # if this is not an ACK message
+                    print("This is not an ACK message!")
+            elif sequence_number > seq: # if sender6 get receiver4 for instance
+                sequence_id = last_seq_from_client + 1 # then sender4 will replace and resend
+                last_seq_from_client = sequence_id # store sequence number of last message
+            else:
+                print(f"Current sequence number from client: {sequence_number}")
+                print(f"Current sequence number from server: {seq}")
                 
         except BaseException as e:
             print("Time out while waiting for ACK! Resend packet now", e)
+        
+        print(f"Total transferred: {total_sent}")
 
         
         
@@ -93,7 +115,52 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
 
 
 
-def stop_and_wait_server():
+def stop_and_wait_server(serverSocket):
+    total_received = 0
+    seq_number_of_server = -1
+    last_ACK_msg = 0
+    while True:
+        try: 
+            # Receives packet from client
+            client_msg, client_Addr = serverSocket.recvfrom(2048)
+
+            header_from_msg = client_msg[:12]
+
+            # parse header
+            seq, ack, flags, win = parse_header(header_from_msg)
+
+
+
+            data_from_msg = client_msg[12:]
+
+            if len(data_from_msg) > 0 and len(data_from_msg) <= 1460: # if packet is ok
+                seq_number_of_server += 1
+                total_received += len(data_from_msg) # testing only. Can delete
+                # send ack
+                data = b''
+                sequence_number = seq_number_of_server
+                acknowledgment_number = random.randint((0, 1000))
+                window = 0
+                flags = 4 # ACK flag sets here, and the decimal is 4
+                last_ACK_msg = acknowledgment_number
+
+                # and send ACK back to client for confirmation
+                ACK_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                serverSocket.sendto(ACK_packet, client_Addr) # send SYN ACK to client
+            else: # if packet is not OK. Send DUPACK
+                data = b''
+                sequence_number = seq_number_of_server
+                acknowledgment_number = last_ACK_msg
+                window = 0
+                flags = 4 # ACK flag sets here, and the decimal is 4
+                # and send ACK back to client for confirmation
+                ACK_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
+                serverSocket.sendto(ACK_packet, client_Addr) # send SYN ACK to client
+        except:
+            print("Have not received any packet from client")
+            
+
+
 
 
 
