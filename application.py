@@ -3,6 +3,7 @@ from struct import *
 import argparse
 import ipaddress
 import sys
+from PIL import Image
 # ------------------------------------------------------------------------------#
 #                                   Header handling                             #
 # ------------------------------------------------------------------------------#
@@ -36,6 +37,14 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
+
+
+
+
+# ------------------------------------------------------------------------------#
+#                                Handle file                                    #
+# ------------------------------------------------------------------------------#
+
 def file_splitting(file_sent):
     list = []
     with open(str(file_sent), 'rb') as file:
@@ -51,6 +60,12 @@ def join_file(list, filename):
         for part in list:
             f.write(part)
     return filename
+
+# ------------------------------------------------------------------------------#
+#                            Done handle file                                   #
+# ------------------------------------------------------------------------------#
+
+
 
 
 
@@ -68,7 +83,7 @@ def GBN_client(window, filename, clientSocket, server_Address):
     first_in_window = 0
     next_in_window = 0
     window=5
-
+    print('Lengden av data listen: '+str(len(data_list)))
     while sequence_id < len(data_list):
         data = data_list[sequence_id]
         seq_number = sequence_id
@@ -79,6 +94,9 @@ def GBN_client(window, filename, clientSocket, server_Address):
         #creating packet, and sending
         packet = create_packet(seq_number,acknowledgement_number,flags,window,data)
         clientSocket.sendto(packet,server_Address)
+        
+        #updates the sequence number
+        seq_number+=1
 
         #updates the window
         next_in_window+=1
@@ -108,20 +126,18 @@ def GBN_client(window, filename, clientSocket, server_Address):
 
         # The window should be full - now we wait on ack to move the window
         
-
+        print('TRYING TO GET ACK FROM SERVER')
         # Try to receive an ack for the sent packets
         try:    
-            #setting defualt timeout to 500ms
-            # meaning it will establish a 0.5 timeout on every socket operation (all off the ack receivings)
-            clientSocket.setdefaulttimeout(0.5)
 
             while True: #Receiving ack from server
-
+                clientSocket.settimeout(0.5)
                 #reveices packer from server
                 ack_from_server, serverAddr = clientSocket.recvfrom(2048)
 
                 # parsing the header since the ack packet should be with no data
                 seq, ack, flagg, win = parse_header(ack_from_server)
+                print('Fikk ack: '+str(ack))
 
                 # Checks if the acknowledgement is for the right packet. 
                 # The ack should be for the first packet in the window. 
@@ -135,23 +151,27 @@ def GBN_client(window, filename, clientSocket, server_Address):
                         sequence_id += 1 #the next in sequence_id will be the next packet to be send
                         first_in_window+=1 # we move the window
                 else:
+                    print('Break, fordi '+str(first_in_window)+' er ikke det samme som '+ str(ack))
                     break
-             
         except TimeoutError:
-            print("Error: Timeout")
+            "Error: Timeout"
+    
+    
         
-        clientSocket.setdefaulttimeout(None) #resetter default timeren
 
 
-        #Burde jeg heller kode med å kalle på metoder som sender pakker også ha en while som konstant lytter etter ack?
-        # Og dersom acken aldri kommer blir det timeout? 
+            #Burde jeg heller kode med å kalle på metoder som sender pakker også ha en while som konstant lytter etter ack?
+            # Og dersom acken aldri kommer blir det timeout? 
 
+
+    print('Ute av While')
     seq_number=0
     acknowledgement_number=0
     flagg=2
     emptydata=b''
     fin_packet = create_packet(seq_number,acknowledgement_number,flagg,window,emptydata)
     clientSocket.sendto(fin_packet,server_Address) 
+    print('Sendt fin packet')
 
     #METHOD TO CLOSE CONNECTION??
 
@@ -163,20 +183,24 @@ def GBN_server(window, filename, serverSocket): #do we need window?
 
     emptydata=b''
     sequence_number = 0
-    ack_number = None
+    ack_number = 0
     window = window
     flagg = 0
     last_ack_number = -1
 
-    packet, client_address = serverSocket.recvfrom(2048)
+    
 
     while True:
+
+        packet, client_address = serverSocket.recvfrom(2048)
+        print('\nReceived a packet!')
                 
         # Extracting the header
         header = packet[:12]
 
         # parsing the header
         seq, ack, flagg, win = parse_header(header)
+        print('Packet with seq: '+str(seq))
 
         #parsing the flags
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
@@ -190,6 +214,7 @@ def GBN_server(window, filename, serverSocket): #do we need window?
         if seq == (last_ack_number+1): 
             # extract the data from the header
             data = packet[12:]
+            print('The data came in the right order!')
 
             # Puts the data in the list
             data_list.append(data)
@@ -204,17 +229,32 @@ def GBN_server(window, filename, serverSocket): #do we need window?
             #creates and send ACK-msg to server
             ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
             serverSocket.sendto(ack_packet, client_address)
+            sequence_number+=1
+            last_ack_number+=1
+            print('Sent ack packet: '+str(ack_number))
+
 
     filename = join_file(data_list,filename)
-    print(filename.decode())
+    
+    #Tekst fil skrive ut
+    """
+    f = open(filename, 'r')
+    file_content = f.read()
+    print(file_content)
+    """
 
+    try:
+        # Åpne bildet
+        img = Image.open(filename)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+        
 
     # METHOD TO CLOSE CONNECTION?
-
-
-
-
-
 
 
 
@@ -231,7 +271,7 @@ def GBN_server(window, filename, serverSocket): #do we need window?
 #                                 Server side                                   #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_server(serverSocket):
+def connection_establishment_server(serverSocket, modus, filename):
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
 
@@ -270,6 +310,8 @@ def connection_establishment_server(serverSocket):
             if ACK_ack_flagg == 4:
                 print("got ACK from client!")
                 print("Connection established with ", client_Addr)
+                if 'GBN' in modus:
+                    GBN_server(window,filename,serverSocket)
             else:
                 print("Error: ACK not received!")
 
@@ -281,7 +323,7 @@ def connection_establishment_server(serverSocket):
 
     
 
-def server_main(bind_IPadress, port):
+def server_main(bind_IPadress, port, modus, filename):
     server_host = bind_IPadress
     server_port = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -295,7 +337,7 @@ def server_main(bind_IPadress, port):
     print("Server is ready to receive!!!")
     
     #sending socket to method thats establishing connection with client.
-    connection_establishment_server(serverSocket)
+    connection_establishment_server(serverSocket, modus, filename)
         
 
             
@@ -320,7 +362,7 @@ def server_main(bind_IPadress, port):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus):
+def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, filename):
 
     # Create a empty packet with SYN flag
     data = b''
@@ -373,7 +415,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
                 if modus == "SAW":
                     print('Må kalle funksjon')
                 elif modus == "GBN":
-                    print('Må kalle funksjon')
+                    GBN_client(window,filename,clientSocket,serverAddr)
                 else:
                     print('Må kalle funksjon')
                
@@ -384,7 +426,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
 
-def client_main(server_ip_adress, server_port, modus):
+def client_main(server_ip_adress, server_port, modus, filename):
     serverName = server_ip_adress
     serverPort = server_port
 
@@ -392,7 +434,7 @@ def client_main(server_ip_adress, server_port, modus):
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # sending the arguements in this method to establish a connection with server
-    connection_establishment_client(clientSocket, serverName, serverPort, modus)
+    connection_establishment_client(clientSocket, serverName, serverPort, modus, filename)
 
 
 
@@ -470,6 +512,6 @@ elif args.file is None:
 
 else: # Pass the conditions. This is when one of the modes is activated
     if args.server:
-        server_main(args.bind, args.port)
+        server_main(args.bind, args.port, args.modus, args.file)
     else:
-        client_main(args.serverip, args.port, args.modus)
+        client_main(args.serverip, args.port, args.modus, args.file)
