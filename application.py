@@ -3,6 +3,7 @@ from struct import *
 import argparse
 import ipaddress
 import sys
+from PIL import Image
 # ------------------------------------------------------------------------------#
 #                                   Header handling                             #
 # ------------------------------------------------------------------------------#
@@ -30,43 +31,174 @@ def parse_flags(flags): # get the values of syn, ack and fin
     fin = flags & (1 << 1)
     return syn, ack, fin
 
-
-
 # ------------------------------------------------------------------------------#
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
-def file_splitting(list, file_sent):
+# ------------------------------------------------------------------------------#
+#                                Handle file                                    #
+# ------------------------------------------------------------------------------#
+
+def file_splitting(file_sent):
+    list = []
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
             list.append(data) # add to an array
             if not data: # break if there is no more data
                 break
+    return list
 
-def stop_and_wait_client(file_sent):
-    
-    data_list = []
-    file_splitting(data_list, file_sent)
+def join_file(list, filename):
+    with open(filename, 'wb') as f:
+        for part in list:
+            f.write(part)
+    return filename
+
+# ------------------------------------------------------------------------------#
+#                            Done handle file                                   #
+# ------------------------------------------------------------------------------#
+
+# ------------------------------------------------------------------------------#
+#                                 STOP AND WAIT                -                #
+# ------------------------------------------------------------------------------#
+
+def SAW_Client(filename,clientSocket,serverAddr, test):
+    #Dataene vi skal sende er splittet opp og satt inn i array
+    data_list = file_splitting(filename)
+
+    #starter på 0 
     sequence_id = 0
 
-    for i in range(len(data_list)):
-        
-        
-        
+    #sa lenge det er data a sende
+    while sequence_id < len(data_list):
+        #legger inn riktig data del
+        data = data_list[sequence_id]
+        acknowledgement_number = 0
+        window = 0 
+        flags = 0
+
+        #creating packet, and sending
+        packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
+        clientSocket.sendto(packet,serverAddr)
 
 
+        # FLODHEST: MAA JEG OPPDATERE NOEN VARIABLER HER????
+        try:    
 
-def stop_and_wait_server():
+            while True: #Receiving ack from server
+                clientSocket.settimeout(0.5)
 
+                #reveices packer from server
+                ack_from_server, serverAddr = clientSocket.recvfrom(2048)
 
+                 # parsing the header since the ack packet should be with no data
+                seq, ack, flagg, win = parse_header(ack_from_server)
+                print('Fikk ack: '+str(ack))
+
+                # Checks if the acknowledgement is for the right packet
+                if  sequence_id == ack:
+                    # parse flags
+                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+                    # Check if it has ack flagg marked
+                    if ack_flagg == 4:
+                        #oker hvis vi har faatt riktig pakke
+                        sequence_id+=1
+                else:
+                    #hvis ack ikke er som forventet saa oppdaterer vi seq til aa veaere det vi fikk som dupack
+                    sequence_id=ack+1
+                    break
+        except TimeoutError:
+            "Error: Timeout"
+                
+    print('Ute av While')
+    seq_number=0
+    acknowledgement_number=0
+    flagg=2
+    emptydata=b''
+    fin_packet = create_packet(seq_number,acknowledgement_number,flagg,window,emptydata)
+    clientSocket.sendto(fin_packet,serverAddr) 
+    print('Sendt fin packet')
+
+def SAW_Server(filename,serverSocket, test):
+    #listen vi legger data i
+    data_list = [] 
+
+    emptydata=b''
+    sequence_number = 0
+    ack_number = 0
+    window = 0
+    flagg = 0
+    last_ack_number = -1
+
+    while True:
+        #venter paa pakker
+        packet, client_address = serverSocket.recvfrom(2048)
+        print('\nReceived a packet!')
+
+        # Extracting the header
+        header = packet[:12]
+
+        # parsing the header
+        seq, ack, flagg, win = parse_header(header)
+
+        #parsing the flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+        # check if this is a fin message
+        if fin_flagg == 2:
+            print("Finished receivind packets")
+            break
+
+        #checks to se if packets come in the right order.
+        if seq == (last_ack_number+1): 
+            # extract the data from the header
+            data = packet[12:]
+            print('The data came in the right order!')
+
+            # Puts the data in the list
+            data_list.append(data)
+
+            # FLODHEST: send ack melding OG HUSK AA OKE LASTACKNUMBER
+            ack_number=seq
+            flagg = 4 # sets the ack flag
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+            last_ack_number+=1
+            sequence_number+=1
+
+        else:
+            ack_number=last_ack_number
+            flagg = 4 # sets the ack flag
+            #send ack  med lastacknumber
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+
+    filename = join_file(data_list,filename)
+
+    try:
+        # Åpne bildet
+        img = Image.open(filename)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+
+# ------------------------------------------------------------------------------#
+#                           End of stop and wait                                #
+# ------------------------------------------------------------------------------#
 
 
 # ------------------------------------------------------------------------------#
 #                                 Server side                                   #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_server(serverSocket):
+def connection_establishment_server(serverSocket, modus, filename, test):
 
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
@@ -106,17 +238,18 @@ def connection_establishment_server(serverSocket):
             if ACK_ack_flagg == 4:
                 print("got ACK from client!")
                 print("Connection established with ", client_Addr)
+                if 'SAW' in modus:
+                    SAW_Server(filename,serverSocket, test)
             else:
                 print("Error: ACK not received!")
 
         else:
             print("Error, Ack_number does not match")
-
     else:
         print("Error: SYN not received!")
     
 
-def server_main(bind_IPadress, port):
+def server_main(bind_IPadress, port, modus, filename, test):
     server_host = bind_IPadress
     server_port = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -130,7 +263,7 @@ def server_main(bind_IPadress, port):
     print("Server is ready to receive!!!")
     
     #sending socket to method thats establishing connection with client.
-    connection_establishment_server(serverSocket)
+    connection_establishment_server(serverSocket, modus, filename, test)
         
 
             
@@ -155,7 +288,7 @@ def server_main(bind_IPadress, port):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus):
+def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, filename, test):
 
     # Create a empty packet with SYN flag
     data = b''
@@ -206,7 +339,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
             
                 #which modus the user wants to run in
                 if modus == "SAW":
-                    print('Må kalle funksjon')
+                    SAW_Client(filename,clientSocket,serverAddr, test)
                 elif modus == "GBN":
                     print('Må kalle funksjon')
                 else:
@@ -219,7 +352,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
 
-def client_main(server_ip_adress, server_port, modus):
+def client_main(server_ip_adress, server_port, modus, filename, test):
     serverName = server_ip_adress
     serverPort = server_port
 
@@ -227,7 +360,7 @@ def client_main(server_ip_adress, server_port, modus):
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # sending the arguements in this method to establish a connection with server
-    connection_establishment_client(clientSocket, serverName, serverPort, modus)
+    connection_establishment_client(clientSocket, serverName, serverPort, modus, filename, test)
 
 
 
@@ -285,6 +418,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
+parser.add_argument('-t','--test', action='store_true', help='use this flag to run the program test mode which looses a packet')
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
@@ -305,6 +439,6 @@ elif args.file is None:
 
 else: # Pass the conditions. This is when one of the modes is activated
     if args.server:
-        server_main(args.bind, args.port)
+        server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
-        client_main(args.serverip, args.port, args.modus)
+        client_main(args.serverip, args.port, args.modus, args.file, args.test)
