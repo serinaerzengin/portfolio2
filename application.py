@@ -55,7 +55,7 @@ def join_file(list, filename):
             f.write(part)
     return filename
 
-def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
+def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, test):
     # Array contains data packet
     data_list = file_splitting(file_sent) # split file to smaller parts
     
@@ -63,6 +63,11 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
     last_ack_from_server = 0
     total_sent = 0 # testing purpose. Can delete
     while sequence_id < len(data_list): # while amount of sent packets is smaller than total packets
+
+        if "Loss" in test and sequence_id == 7:
+            print("Drop packet number 7")
+            sequence_id += 1
+            test = "drop"
 
         # create new packet 
         data = data_list[sequence_id] # get packet with the corresponding seq number from array
@@ -313,7 +318,7 @@ def server_main(bind_IPadress, port, modus, file_name):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, file_sent):
+def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, file_sent, test):
 
     # Create a empty packet with SYN flag
     data = b''
@@ -362,7 +367,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
             
                 #which modus the user wants to run in
                 if modus == "SAW":
-                    stop_and_wait_client(file_sent, clientSocket, server_IP_adress, server_port)
+                    stop_and_wait_client(file_sent, clientSocket, server_IP_adress, server_port, test)
                 elif modus == "GBN":
                     print('Må kalle funksjon')
                 else:
@@ -375,7 +380,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     except BaseException as e:
         print("Time out while waiting for SYN-ACK", e) 
 
-def client_main(server_ip_adress, server_port, modus, filesent):
+def client_main(server_ip_adress, server_port, modus, filesent, test):
     serverName = server_ip_adress
     serverPort = server_port
 
@@ -383,7 +388,7 @@ def client_main(server_ip_adress, server_port, modus, filesent):
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # sending the arguements in this method to establish a connection with server
-    connection_establishment_client(clientSocket, serverName, serverPort, modus, filesent)
+    connection_establishment_client(clientSocket, serverName, serverPort, modus, filesent, test)
 
 
 
@@ -441,6 +446,8 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
+parser.add_argument('-t','--test', type=str, help='use this flag to run the program test mode which looses a packet')
+
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
@@ -463,4 +470,4 @@ else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
         server_main(args.bind, args.port, args.modus, args.file)
     else:
-        client_main(args.serverip, args.port, args.modus, args.file)
+        client_main(args.serverip, args.port, args.modus, args.file, args.test)
