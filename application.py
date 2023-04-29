@@ -102,7 +102,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
                  # parsing the header since the ack packet should be with no data
                 seq, ack, flagg, win = parse_header(ack_from_server)
                 print('Fikk ack: '+str(ack))
-                #FLODHEST HER BLIR DET FEIL, fordi vo øker sewuence id til å være en over ii test, og 
+                
                 # Checks if the acknowledgement is for the right packet
                 if  sequence_id == ack:
                     # parse flags
@@ -175,7 +175,7 @@ def SAW_Server(filename,serverSocket, test):
                 print('verdien til test settes til', test)
             
             else:
-                # FLODHEST: send ack melding OG HUSK AA OKE LASTACKNUMBER
+               
                  # Puts the data in the list
                 data_list.append(data)
                 ack_number=seq
