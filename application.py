@@ -64,7 +64,7 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
     total_sent = 0 # testing purpose. Can delete
     while sequence_id < len(data_list): # while amount of sent packets is smaller than total packets
 
-        if "Loss" in test and sequence_id == 7:
+        if "Loss" in test and sequence_id == 7: # if Loss is defined in -t tag!
             print("Drop packet number 7")
             sequence_id += 1
             test = "drop"
