@@ -64,8 +64,8 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
     total_sent = 0 # testing purpose. Can delete
     while sequence_id < len(data_list): # while amount of sent packets is smaller than total packets
 
-        if "Loss" in test and sequence_id == 7: # if Loss is defined in -t tag!
-            print("Drop packet number 7")
+        if "Loss" in test and sequence_id == 25: # if Loss is defined in -t tag!
+            print(f"Drop packet number {sequence_id}")
             sequence_id += 1
             test = "drop"
 
@@ -105,7 +105,6 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
                     total_sent += len(data) # testing. CAN DELETE
                 else: # if this is not an ACK message
                     print("This is not an ACK message!")
-
             elif sequence_number > seq: # if sender6 get receiver4 for instance
                 # if ack number of this new packet is equal to ack of the last received sequence -> DUPACK
                 # check if this is DUPACK
