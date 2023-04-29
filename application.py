@@ -112,8 +112,8 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
                 print(f"Current sequence number from client: {sequence_number}")
                 print(f"Current sequence number from server: {seq}")
                 
-        except BaseException as e:
-            print("Time out while waiting for ACK! Resend packet now", e)
+        except timeout:
+            print("Time out while waiting for ACK! Resend packet now")
         
         print(f"Total transferred: {total_sent}")
 
@@ -142,15 +142,16 @@ def stop_and_wait_server(serverSocket):
 
             data_from_msg = client_msg[12:]
 
-            if len(data_from_msg) > 0 and len(data_from_msg) <= 1460: # if packet is ok
+            if seq == (seq_number_of_server + 1): # if packet is ok
                 seq_number_of_server += 1
+                print(f"fikk pakke {seq_number_of_server} from client")
                 total_received += len(data_from_msg) # testing only. Can delete
                 data_received.append(data_from_msg)
 
                 # send ack
                 data = b''
                 sequence_number = seq_number_of_server
-                acknowledgment_number = random.randint((0, 1000))
+                acknowledgment_number = random.randint(0, 1000)
                 window = 0
                 flags = 4 # ACK flag sets here, and the decimal is 4
                 last_ACK_msg = acknowledgment_number
@@ -168,7 +169,7 @@ def stop_and_wait_server(serverSocket):
                 # and send ACK back to client for confirmation
                 ACK_packet = create_packet(sequence_number, acknowledgment_number, flags, window, data)
                 serverSocket.sendto(ACK_packet, client_Addr) # send SYN ACK to client
-        except:
+        except error:
             print("Have not received any packet from client")
     
             
