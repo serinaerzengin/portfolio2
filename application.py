@@ -4,7 +4,7 @@ import argparse
 import ipaddress
 import sys
 import random
-#from PIL import Image
+from PIL import Image
 
 # ------------------------------------------------------------------------------#
 #                                   Header handling                             #
@@ -39,13 +39,15 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
-def file_splitting(list, file_sent):
+def file_splitting(file_sent):
+    list = []
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
             list.append(data) # add to an array
             if not data: # break if there is no more data
                 break
+    return list
 
 def join_file(list, filename):
     with open(filename, 'wb') as f:
@@ -55,8 +57,8 @@ def join_file(list, filename):
 
 def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
     # Array contains data packet
-    data_list = []
-    file_splitting(data_list, file_sent) # split file to smaller parts
+    data_list = file_splitting(file_sent) # split file to smaller parts
+    
     sequence_id = 0 # sequence id of packet
     last_ack_from_server = 0
     total_sent = 0 # testing purpose. Can delete
@@ -135,12 +137,9 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port):
     except error:
         print("Can not close at the moment!!!")
         
-        
-        
 
 
-
-def stop_and_wait_server(serverSocket):
+def stop_and_wait_server(serverSocket, file_name):
     data_received = []
     total_received = 0
     seq_number_of_server = -1
@@ -207,6 +206,9 @@ def stop_and_wait_server(serverSocket):
                 serverSocket.sendto(ACK_packet, client_Addr) # send SYN ACK to client
         except error:
             print("Have not received any packet from client")
+    myfile = join_file(data_received, file_name)
+    img = Image.open(myfile)
+    img.show()
     
     
             
@@ -220,7 +222,7 @@ def stop_and_wait_server(serverSocket):
 #                                 Server side                                   #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_server(serverSocket, modus):
+def connection_establishment_server(serverSocket, modus, file_name):
 
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
@@ -261,7 +263,7 @@ def connection_establishment_server(serverSocket, modus):
                 print("got ACK from client!") # CAN DELETE
                 print("Connection established with ", client_Addr)
                 if "SAW" in modus:
-                    stop_and_wait_server(serverSocket)
+                    stop_and_wait_server(serverSocket, file_name)
             else:
                 print("Error: ACK not received!")
 
@@ -272,7 +274,7 @@ def connection_establishment_server(serverSocket, modus):
         print("Error: SYN not received!")
     
 
-def server_main(bind_IPadress, port, modus):
+def server_main(bind_IPadress, port, modus, file_name):
     server_host = bind_IPadress
     server_port = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -286,7 +288,7 @@ def server_main(bind_IPadress, port, modus):
     print("Server is ready to receive!!!")
     
     #sending socket to method thats establishing connection with client.
-    connection_establishment_server(serverSocket, modus)
+    connection_establishment_server(serverSocket, modus, file_name)
         
 
             
@@ -459,6 +461,6 @@ elif args.file is None: #
 
 else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
-        server_main(args.bind, args.port, args.modus)
+        server_main(args.bind, args.port, args.modus, args.file)
     else:
         client_main(args.serverip, args.port, args.modus, args.file)
