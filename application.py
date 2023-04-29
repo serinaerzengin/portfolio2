@@ -125,6 +125,8 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
             # if sender1 has not gotten its receiver1 (ack1) --> resend sender1 to receiver1
             sequence_id = sequence_number # resend packet here
             print(f"Time out while waiting for ACK! Resend packet {sequence_id} now")
+        clientSocket.settimeout(None) # reset timeout
+
         
         
     
