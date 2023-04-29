@@ -83,6 +83,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
                 print('\n\n Dropper pakke nr 16')
                 sequence_id+=1
                 test = False
+                
         else:
             #creating packet, and sending
             data = data_list[sequence_id]
@@ -101,7 +102,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
                  # parsing the header since the ack packet should be with no data
                 seq, ack, flagg, win = parse_header(ack_from_server)
                 print('Fikk ack: '+str(ack))
-
+                #FLODHEST HER BLIR DET FEIL, fordi vo øker sewuence id til å være en over ii test, og 
                 # Checks if the acknowledgement is for the right packet
                 if  sequence_id == ack:
                     # parse flags
@@ -114,6 +115,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
                 else:
                     #hvis ack ikke er som forventet saa oppdaterer vi seq til aa veaere det vi fikk som dupack
                     sequence_id=ack+1
+                    print('kom inn her')
                     break
         except TimeoutError:
             "Error: Timeout"
@@ -141,7 +143,7 @@ def SAW_Server(filename,serverSocket, test):
     while True:
         #venter paa pakker
         packet, client_address = serverSocket.recvfrom(2048)
-        print('\nReceived a packet!')
+        
 
         # Extracting the header
         header = packet[:12]
@@ -163,18 +165,19 @@ def SAW_Server(filename,serverSocket, test):
             data = packet[12:]
             print('The data came in the right order!')
 
-            # Puts the data in the list
-            data_list.append(data)
+           
 
             # If at packet nr. 13, we skip sending the ack (the ack got lost).
             if seq == 13 and test:
                 print('\n\nDroppet ack nr 13\n\n')
-            
                 # set to false so that the skip only happens once.
                 test = False
+                print('verdien til test settes til', test)
             
             else:
                 # FLODHEST: send ack melding OG HUSK AA OKE LASTACKNUMBER
+                 # Puts the data in the list
+                data_list.append(data)
                 ack_number=seq
                 flagg = 4 # sets the ack flag
                 #creates and send ACK-msg to server
