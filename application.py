@@ -76,16 +76,19 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
         window = 0
         flags = 0
 
-        # send packets til server
-        my_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-        clientSocket.sendto(my_packet, (server_IPadress, server_port))
+        clientSocket.settimeout(0.5) # set timeout for sending packet
+        # Dealing with packet loss
+        try:
+            my_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+            clientSocket.sendto(my_packet, (server_IPadress, server_port)) # send packets til server
+        except timeout:
+            sequence_id = sequence_number # resend packet
 
-        # set timeout
-        clientSocket.settimeout(0.5)
 
+        
+        clientSocket.settimeout(0.5) # set timeout for ACK message from server
         try:
             # wait for an ACK from server to confirm packet
-
             packet_from_Server, serverAddr = clientSocket.recvfrom(2048)
 
             seq, ack, flagg, win = parse_header(packet_from_Server)
@@ -97,7 +100,6 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
                 syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
 
                 if ack_flagg == 4: # check if this is ACK message
-
                     # get ready for new packet
                     print(f"packet {sequence_id} sent!!!") # CAN DELETE
                     sequence_id += 1 # sequence number oker for neste pakke
@@ -105,6 +107,7 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
                     total_sent += len(data) # testing. CAN DELETE
                 else: # if this is not an ACK message
                     print("This is not an ACK message!")
+
             elif sequence_number > seq: # if sender6 get receiver4 for instance
                 # if ack number of this new packet is equal to ack of the last received sequence -> DUPACK
                 # check if this is DUPACK
@@ -114,11 +117,14 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
                     # receiver will assign a DUPACK with seq 4 to ask sender to send a (5) packet. For more details, check SAW server
                     print(f"resend packet {sequence_id}")
 
-            else:
+            else: # test. Can remove this and change elif to else instead...
                 print(f"Current sequence number from client: {sequence_number}")
                 print(f"Current sequence number from server: {seq}")
-        except timeout:
-            print("Time out while waiting for ACK! Resend packet now")
+
+        except timeout: # Dealing with packet loss (of ack)
+            # if sender1 has not gotten its receiver1 (ack1) --> resend sender1 to receiver1
+            sequence_id = sequence_number # resend packet here
+            print(f"Time out while waiting for ACK! Resend packet {sequence_id} now")
         
         
     
