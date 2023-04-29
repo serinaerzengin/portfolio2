@@ -5,7 +5,7 @@ import ipaddress
 import sys
 from PIL import Image
 # ------------------------------------------------------------------------------#
-#                                   Header handling                             #
+#                                 Header handling                               #
 # ------------------------------------------------------------------------------#
 
 header_format = '!IIHH' # header size is always 12 bytes
