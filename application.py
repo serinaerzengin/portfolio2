@@ -83,7 +83,6 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
         clientSocket.sendto(packet,serverAddr)
 
 
-        # FLODHEST: MAA JEG OPPDATERE NOEN VARIABLER HER????
         try:    
 
             while True: #Receiving ack from server
