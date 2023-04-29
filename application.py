@@ -73,14 +73,21 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
     #sa lenge det er data a sende
     while sequence_id < len(data_list):
         #legger inn riktig data del
-        data = data_list[sequence_id]
+        
         acknowledgement_number = 0
         window = 0 
         flags = 0
 
-        #creating packet, and sending
-        packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
-        clientSocket.sendto(packet,serverAddr)
+        #test sender feil rekkefølge
+        if sequence_id == 16 and test:
+                print('\n\n Dropper pakke nr 16')
+                sequence_id+=1
+                test = False
+        else:
+            #creating packet, and sending
+            data = data_list[sequence_id]
+            packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
+            clientSocket.sendto(packet,serverAddr)
 
 
         try:    
@@ -159,14 +166,22 @@ def SAW_Server(filename,serverSocket, test):
             # Puts the data in the list
             data_list.append(data)
 
-            # FLODHEST: send ack melding OG HUSK AA OKE LASTACKNUMBER
-            ack_number=seq
-            flagg = 4 # sets the ack flag
-            #creates and send ACK-msg to server
-            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
-            serverSocket.sendto(ack_packet, client_address)
-            last_ack_number+=1
-            sequence_number+=1
+            # If at packet nr. 13, we skip sending the ack (the ack got lost).
+            if seq == 13 and test:
+                print('\n\nDroppet ack nr 13\n\n')
+            
+                # set to false so that the skip only happens once.
+                test = False
+            
+            else:
+                # FLODHEST: send ack melding OG HUSK AA OKE LASTACKNUMBER
+                ack_number=seq
+                flagg = 4 # sets the ack flag
+                #creates and send ACK-msg to server
+                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+                serverSocket.sendto(ack_packet, client_address)
+                last_ack_number+=1
+                sequence_number+=1
 
         else:
             ack_number=last_ack_number
