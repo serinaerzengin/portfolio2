@@ -5,6 +5,7 @@ import ipaddress
 import sys
 import random
 from PIL import Image
+import time
 
 # ------------------------------------------------------------------------------#
 #                                   Header handling                             #
@@ -64,9 +65,9 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
     total_sent = 0 # testing purpose. Can delete
     while sequence_id < len(data_list): # while amount of sent packets is smaller than total packets
 
-        if "Loss" in test and sequence_id == 25: # if Loss is defined in -t tag!
+        if "Loss" in test and sequence_id == 4: # if Loss is defined in -t tag!
             print(f"Drop packet number {sequence_id}")
-            sequence_id += 1
+            sequence_id += 2
             test = "drop"
 
         # create new packet 
@@ -81,6 +82,7 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
         try:
             my_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
             clientSocket.sendto(my_packet, (server_IPadress, server_port)) # send packets til server
+            print(f"packet {sequence_id} sent!!!") # CAN DELETE
         except timeout:
             sequence_id = sequence_number # resend packet
 
@@ -101,30 +103,32 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
 
                 if ack_flagg == 4: # check if this is ACK message
                     # get ready for new packet
-                    print(f"packet {sequence_id} sent!!!") # CAN DELETE
                     sequence_id += 1 # sequence number oker for neste pakke
                     last_ack_from_server = ack # store ack of the last received sequence
                     total_sent += len(data) # testing. CAN DELETE
                 else: # if this is not an ACK message
                     print("This is not an ACK message!")
 
-            elif sequence_number > seq: # if sender6 get receiver4 for instance
+            elif sequence_number > seq: # if sender6 get receiver4 for instance (wrong order)
                 # if ack number of this new packet is equal to ack of the last received sequence -> DUPACK
                 # check if this is DUPACK
+                print(seq) # CAN DELETE
                 if last_ack_from_server == ack: # if this is DUPACK
-                    sequence_id = seq + 1 # then sender5 will be sent instead.
-                    # This is because if sender(6) is different from receiver(4) -> packets are not sent in the right order
-                    # receiver will assign a DUPACK with seq 4 to ask sender to send a (5) packet. For more details, check SAW server
+                    sequence_id = seq # then sender4 will be sent instead.
+                    # This is because if sender(6) is sent instead of sender(4) -> packets are not sent in the right order
+                    # receiver will assign a DUPACK with the right seq (4) asking sender to resend the right packet. For more details, check SAW server
                     print(f"resend packet {sequence_id}")
 
             else: # test. Can remove this and change elif to else instead...
                 print(f"Current sequence number from client: {sequence_number}")
                 print(f"Current sequence number from server: {seq}")
+                time.sleep(3)
 
         except timeout: # Dealing with packet loss (of ack)
             # if sender1 has not gotten its receiver1 (ack1) --> resend sender1 to receiver1
+            print(f"Time out while waiting for ACK {sequence_number}")
             sequence_id = sequence_number # resend packet here
-            print(f"Time out while waiting for ACK! Resend packet {sequence_id} now")
+            print(f"Resend packet {sequence_id} now")
         clientSocket.settimeout(None) # reset timeout
 
         
@@ -151,10 +155,10 @@ def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, 
         
 
 
-def stop_and_wait_server(serverSocket, file_name):
+def stop_and_wait_server(serverSocket, file_name, test):
     data_received = []
     total_received = 0
-    seq_number_of_server = -1
+    seq_number_of_server = 0
     last_ACK_msg = 0
 
     while True:
@@ -188,16 +192,40 @@ def stop_and_wait_server(serverSocket, file_name):
                 break
 
             data_from_msg = client_msg[12:]
-
-            if seq == (seq_number_of_server + 1): # if packet is ok
-                seq_number_of_server += 1
-                print(f"fikk pakke {seq_number_of_server} from client") # CAN DELETE 
+            if "skip_ack" in test and seq_number_of_server == 35:
+                print(f"drop ack {seq_number_of_server}")
+                seq_number_of_server += 1 # testing. CAN DELETE
+                
+                test = "back"
+            elif seq == seq_number_of_server: # if packet is ok
+                
                 total_received += len(data_from_msg) # testing only. CAN DELETE
                 data_received.append(data_from_msg)
+                
+                print(f"fikk pakke {seq_number_of_server} from client") # CAN DELETE 
 
-                # send ack to confirm
+                # create ACK message
                 data = b''
                 sequence_number = seq_number_of_server
+                acknowledgment_number = random.randint(0, 1000)
+                window = 0
+                flagg = 4 # ACK flag sets here, and the decimal is 4
+                last_ACK_msg = acknowledgment_number # store ACK of last message
+
+                # and send ACK back to client for confirmation
+                ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, data)
+                serverSocket.sendto(ACK_packet, client_Addr) # send ACK to client
+                print(f"return ack packet {sequence_number} !!!") # CAN DELETE
+                seq_number_of_server += 1 # get ready for the next message from client
+            elif seq_number_of_server > seq: # if ACK message is dropped/skipped (seq of client is 35 and seq of ACK message from server is already 36) --> resend ACK 35 to sender
+                total_received += len(data_from_msg) # testing only. CAN DELETE
+                data_received.append(data_from_msg)
+                
+                print(f"fikk pakke {seq} from client") # CAN DELETE 
+
+                # create ACK message
+                data = b''
+                sequence_number = seq
                 acknowledgment_number = random.randint(0, 1000)
                 window = 0
                 flagg = 4 # ACK flag sets here, and the decimal is 4
@@ -205,9 +233,11 @@ def stop_and_wait_server(serverSocket, file_name):
 
                 # and send ACK back to client for confirmation
                 ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, data)
-                print(f"return packet {sequence_number} !!!") # CAN DELETE
-                serverSocket.sendto(ACK_packet, client_Addr) # send ACK to client
-            else: # if packet is not OK (wrong order for instance) ---> Send DUPACK
+                
+                serverSocket.sendto(ACK_packet, client_Addr) # send ACK 35 to client
+                print(f"return ack packet {sequence_number} !!!") # CAN DELETE
+                seq_number_of_server = seq + 1 # ACK message 35 is now sent -> get ready for the next message from client
+            else: # if packet is not OK (wrong order for instance a.k.a seq_server < seq_client) ---> Send DUPACK
                 data = b''
                 sequence_number = seq_number_of_server
                 acknowledgment_number = last_ACK_msg
@@ -215,7 +245,7 @@ def stop_and_wait_server(serverSocket, file_name):
                 flagg = 4 # ACK flag sets here, and the decimal is 4
                 # and send ACK back to client for confirmation
                 ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, data)
-                serverSocket.sendto(ACK_packet, client_Addr) # send SYN ACK to client
+                serverSocket.sendto(ACK_packet, client_Addr) # send ACK to client
         except error:
             print("Have not received any packet from client")
     myfile = join_file(data_received, file_name)
@@ -234,7 +264,7 @@ def stop_and_wait_server(serverSocket, file_name):
 #                                 Server side                                   #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_server(serverSocket, modus, file_name):
+def connection_establishment_server(serverSocket, modus, file_name, test):
 
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
@@ -275,7 +305,7 @@ def connection_establishment_server(serverSocket, modus, file_name):
                 print("got ACK from client!") # CAN DELETE
                 print("Connection established with ", client_Addr)
                 if "SAW" in modus:
-                    stop_and_wait_server(serverSocket, file_name)
+                    stop_and_wait_server(serverSocket, file_name, test)
             else:
                 print("Error: ACK not received!")
 
@@ -286,7 +316,7 @@ def connection_establishment_server(serverSocket, modus, file_name):
         print("Error: SYN not received!")
     
 
-def server_main(bind_IPadress, port, modus, file_name):
+def server_main(bind_IPadress, port, modus, file_name, test):
     server_host = bind_IPadress
     server_port = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -300,7 +330,7 @@ def server_main(bind_IPadress, port, modus, file_name):
     print("Server is ready to receive!!!")
     
     #sending socket to method thats establishing connection with client.
-    connection_establishment_server(serverSocket, modus, file_name)
+    connection_establishment_server(serverSocket, modus, file_name, test)
         
 
             
@@ -475,6 +505,6 @@ elif args.file is None: #
 
 else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
-        server_main(args.bind, args.port, args.modus, args.file)
+        server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
         client_main(args.serverip, args.port, args.modus, args.file, args.test)
