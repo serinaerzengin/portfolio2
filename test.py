@@ -192,7 +192,7 @@ def stop_and_wait_server(serverSocket, file_name, test):
                 break
 
             data_from_msg = client_msg[12:]
-            if "Loss" in test and seq_number_of_server == 35:
+            if "skip_ack" in test and seq_number_of_server == 35:
                 print(f"drop ack {seq_number_of_server}")
                 seq_number_of_server += 1 # testing. CAN DELETE
                 
