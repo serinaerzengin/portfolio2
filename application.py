@@ -195,7 +195,6 @@ def stop_and_wait_server(serverSocket, file_name, test):
             if "skip_ack" in test and seq_number_of_server == 35:
                 print(f"drop ack {seq_number_of_server}")
                 seq_number_of_server += 1 # testing. CAN DELETE
-                
                 test = "back"
             elif seq == seq_number_of_server: # if packet is ok
                 
@@ -217,6 +216,7 @@ def stop_and_wait_server(serverSocket, file_name, test):
                 serverSocket.sendto(ACK_packet, client_Addr) # send ACK to client
                 print(f"return ack packet {sequence_number} !!!") # CAN DELETE
                 seq_number_of_server += 1 # get ready for the next message from client
+            
             elif seq_number_of_server > seq: # if ACK message is dropped/skipped (seq of client is 35 and seq of ACK message from server is already 36) --> resend ACK 35 to sender
                 total_received += len(data_from_msg) # testing only. CAN DELETE
                 data_received.append(data_from_msg)
@@ -233,10 +233,10 @@ def stop_and_wait_server(serverSocket, file_name, test):
 
                 # and send ACK back to client for confirmation
                 ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, data)
-                
                 serverSocket.sendto(ACK_packet, client_Addr) # send ACK 35 to client
                 print(f"return ack packet {sequence_number} !!!") # CAN DELETE
                 seq_number_of_server = seq + 1 # ACK message 35 is now sent -> get ready for the next message from client
+            
             else: # if packet is not OK (wrong order for instance a.k.a seq_server < seq_client) ---> Send DUPACK
                 data = b''
                 sequence_number = seq_number_of_server
