@@ -682,6 +682,7 @@ group1.add_argument('-b', '--bind', type=check_ip, default='127.0.0.1', help='IP
 group2.add_argument('-c', '--client', action='store_true', help='use this flag to run the program in client mode')
 #serverip argument with a check using the checkip function implemented over
 group2.add_argument('-I', '--serverip', default='127.0.0.1',type=check_ip, help='allows the user to select the IP address of the server' )
+group2.add_argument('-w','--window', type=int, help='Specify window size')
 # ------------------------------------ Done argument for Client ---------------------------------------------------------------#
 
 
@@ -692,8 +693,6 @@ parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose 
 
 parser.add_argument("-f", "--file", help="File name ")
 parser.add_argument('-t','--test', type=str, help='use this flag to run the program test mode which looses a packet')
-parser.add_argument('-w','--window', type=int, help='Specify window size')
-
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
