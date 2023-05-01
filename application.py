@@ -261,16 +261,16 @@ def GBN_server(window, filename, serverSocket, test): #do we need window?
             #sets test to false so packet number 5 does not get skipped. 
             
 
-"""
+
     filename = join_file(data_list,filename)
-    
+    """   
     #Tekst fil skrive ut
     
     f = open(filename, 'r')
     file_content = f.read()
     print(file_content)
     
-    
+    """
 
     try:
         # Åpne bildet
@@ -281,7 +281,7 @@ def GBN_server(window, filename, serverSocket, test): #do we need window?
 
     except IOError:
         print("Kan ikke åpne bildefilen")
-        """
+        
 
     # METHOD TO CLOSE CONNECTION?
 
