@@ -280,9 +280,9 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
         print("\n\n")
         for packet in formatted_packets_list[first_in_wd:first_in_wd+WINDOW_SIZE]: # extract a slice of the data_list. F.eks if base = 0 --> extract packet 0,1,2,3,4
             
-            if "Loss" in test and packet["seq_num"] == 5: # drop packet test
+            if "Loss" in test and packet["seq_num"] == 8: # drop packet test
                 next_in_wd += 1
-                print("drop pakke 5")
+                print("drop pakke 8")
                 test = "hihi"
                 
             # send all packets in this window
@@ -294,11 +294,12 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
                 window = 0
                 flagg = 0
                 my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
-                print(f"sent packet {sequence_number}")
+                
                 
 
                 # should have a try catch here to handle packet loss
                 clientSocket.sendto(my_packet, server_Addr)
+                print(f"sent packet {sequence_number}")
                 total_sent += len(data) # TESTING CAN DELETE
                 next_in_wd += 1 # move to the next packet in window
         # done sending all packets in that specific window
@@ -328,7 +329,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
                     first_in_wd += 1 
 
         except timeout: # resend unACKed packets in window
-            for packet in formatted_packets_list[base:base+WINDOW_SIZE]: # go through the same list again using base!!!
+            for packet in formatted_packets_list[base:base+WINDOW_SIZE]: # go through and handle the same list using base!!!
                 if packet["seq_num"] < next_in_wd and not packet["acked"]: # resend packet that has not been ACKed
                     
                     # create packet
@@ -338,15 +339,31 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
                     window = 0
                     flagg = 0
                     my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
-                    print(f"resend packet because of unACKed in window {sequence_number}")
-
-                    # should have a try catch here to handle packet loss
                     clientSocket.sendto(my_packet, server_Addr)
-                    total_sent += len(data)
+                    print(f"resend packet {sequence_number} because of unACKed in window") # print out info
+                    total_sent += len(data) # TESTING CAN DELETE
+                    # while True: brukes naar man mister mange pakker?
+                    
+                    # ------------------------------------------------------------------------------------------------------------#
+
+                    # After sending, we have to wait to get ACK message from the newly sent packet before moving to the next window              
+                    ack_from_server, server_address = clientSocket.recvfrom(2048)
+                    # parsing header
+                    seq, ack, flags, win = parse_header(ack_from_server)
+                    print(f"receive ack {ack} from server")
+                    for packet in formatted_packets_list: # go through all packets in list
+                        if packet["seq_num"] == ack: # if packet has received its own ACK
+                            syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
+                            # check if this is ACK flagg
+                            if ack_flagg == 4:    
+                                packet["acked"] = True # mark packets as ACKed            
+                                break # continue to check other packets
+                    while first_in_wd < len(formatted_packets_list) and formatted_packets_list[first_in_wd]["acked"]:
+                        first_in_wd += 1 # update first in window since it has ignored the lost packet
             base = first_in_wd # update base to the next new window
     
     print("Done transferring")
-    # transferring is done. Sent FIN-packet
+    # transferring is done. Send FIN-packet
     data = b''
     sequence_number = 0
     acknowledgement_number = 0
