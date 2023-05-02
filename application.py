@@ -51,8 +51,6 @@ def parse_flags(flags): # get the values of syn, ack and fin
 
 def file_splitting(file_sent):
     list = []
-def file_splitting(file_sent):
-    list = []
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
@@ -72,10 +70,44 @@ def join_file(list, filename):
 # ------------------------------------------------------------------------------#
 
 
+# ------------------------------------------------------------------------------#
+#                           Close connection                                    #
+# ------------------------------------------------------------------------------#
+
+def close_connection_client(clientSocket, server_Addr):
+    data = b''
+    sequence_number = 0
+    acknowledgement_number = 0
+    window = 0
+    flags = 2
+    fin_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+    clientSocket.sendto(fin_packet, server_Addr)
+
+    try:
+        close_msg, serverAddr = clientSocket.recvfrom(2048)
+        seq, ack, flagg, win = parse_header(close_msg)
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+        if ack_flagg == 4: # check if this is ACK message
+            print("Close connection from client!!!")
+    except error:
+        print("Can not close at the moment!!!")
+
+def close_connection_server(serverSocket, client_addr):
+    # create ACK
+    sequence_number = 0
+    acknowledgment_number = 0
+    window = 64000
+    flagg = 4 # ACK flag sets here, and the decimal is
+    # and send ACK back to client for confirmation
+    ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, b'')
+    serverSocket.sendto(ACK_packet, client_addr) # send SYN ACK to clie
+    
+    print("The transfer is done! Server close now!!!!")
 
 
-
-
+# ------------------------------------------------------------------------------#
+#                         Done close connection                                 #
+# ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 #                                 GBN                                           #
 # ------------------------------------------------------------------------------#
@@ -162,17 +194,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
         except timeout:
             print("Error: Timeout")
     
-
-
-    seq_number=0
-    acknowledgement_number=0
-    flagg=2
-    emptydata=b''
-    fin_packet = create_packet(seq_number,acknowledgement_number,flagg,window,emptydata)
-    clientSocket.sendto(fin_packet,server_Address) 
-    print('Sendt fin packet')
-
-    #METHOD TO CLOSE CONNECTION??
+    close_connection_client(clientSocket, server_Address)
 
 
 
@@ -205,8 +227,7 @@ def GBN_server(filename, serverSocket, test):
 
         # check if this is a fin message
         if fin_flagg == 2:
-            print("Finished receivind packets")
-            break
+            close_connection_server(serverSocket, client_address)
 
        
         # A packet should not be added if the ack of the pacet before got sent.
@@ -353,14 +374,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
             
             print("Error: Timeout")
                 
-    print('Ute av While')
-    seq_number=0
-    acknowledgement_number=0
-    flagg=2
-    emptydata=b''
-    fin_packet = create_packet(seq_number,acknowledgement_number,flagg,window,emptydata)
-    clientSocket.sendto(fin_packet,serverAddr) 
-    print('Sendt fin packet')
+    close_connection_client(clientSocket, serverAddr)
 
 def SAW_Server(filename,serverSocket, test):
     #list with the data
@@ -389,8 +403,7 @@ def SAW_Server(filename,serverSocket, test):
 
         # check if this is a fin message
         if fin_flagg == 2:
-            print("Finished receivind packets")
-            break
+            close_connection_server(serverSocket, client_address)
 
         #checks to see if packets come in the right order.
         if seq == (last_ack_number+1): 
@@ -560,25 +573,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
                         first_in_wd += 1 # update first in window since it has ignored the lost packet
             base = first_in_wd # update base to the next new window
     
-    print("Done transferring")
-    # transferring is done. Send FIN-packet
-    data = b''
-    sequence_number = 0
-    acknowledgement_number = 0
-    window = 0
-    flags = 2
-    fin_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-    clientSocket.sendto(fin_packet, server_Addr)
-    # Get ACK message and close connection
-    try:
-        close_msg, serverAddr = clientSocket.recvfrom(2048)
-        seq, ack, flagg, win = parse_header(close_msg)
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-        if ack_flagg == 4: # check if this is ACK message
-            print("Close connection from client!!!")
-            print(f"Total transferred: {total_sent}")
-    except error:
-        print("Can not close at the moment!!!")
+    close_connection_client(clientSocket, server_Addr)
 
 
 def SR_server(serverSocket, file_name, test):
@@ -606,20 +601,7 @@ def SR_server(serverSocket, file_name, test):
 
             if fin_flagg == 2: # close signal from client
                 
-                # create ACK
-                sequence_number = 0
-                acknowledgment_number = 0
-                window = 64000
-                flagg = 4 # ACK flag sets here, and the decimal is 4
-
-                # and send ACK back to client for confirmation
-                ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, empty_data)
-                serverSocket.sendto(ACK_packet, client_addr) # send SYN ACK to client
-
-                print(f"Total transferred: {total_received}")
-                print("The transfer is done! Server close now!!!!")
-                
-                break
+                close_connection_server(serverSocket, client_addr)
 
             elif seq == 100 and test: # DROP ACK TESTING
                 print("drop ack 100")
