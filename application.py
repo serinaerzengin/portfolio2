@@ -728,7 +728,7 @@ def connection_establishment_server(serverSocket, modus, filename, test):
                 if 'GBN' in modus:
                     GBN_server(window,filename,serverSocket, test)
                 if "SAW" in modus:
-                    stop_and_wait_server(serverSocket, filename, test)
+                    SAW_Server(filename, serverSocket,  test)
                 elif "SR" in modus:
                     SR_server(serverSocket, filename, test)
             else:
@@ -831,7 +831,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
             
                 #which modus the user wants to run in
                 if modus == "SAW":
-                    stop_and_wait_client(filename, clientSocket, server_IP_adress, server_port, test)
+                    SAW_Client(filename, clientSocket, serverAddr, test)
                 elif modus == "GBN":
                     GBN_client(window,filename,clientSocket,serverAddr, test)
                 else:
