@@ -176,6 +176,122 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
     #METHOD TO CLOSE CONNECTION??
 
 
+
+def GBN_server(filename, serverSocket, test): 
+    data_list = []
+
+    emptydata=b''
+    sequence_number = 0
+    ack_number = 0
+    window = window
+    flagg = 0
+    last_packet_added = -1
+    last_ack_sent = -1
+
+    
+
+    while True:
+
+        packet, client_address = serverSocket.recvfrom(2048)
+                
+        # Extracting the header
+        header = packet[:12]
+
+        # parsing the header
+        seq, ack, flagg, win = parse_header(header)
+        print('\nReceived a packet with seq: '+str(seq))
+
+        #parsing the flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+        # check if this is a fin message
+        if fin_flagg == 2:
+            print("Finished receivind packets")
+            break
+
+       
+        # A packet should not be added if the ack of the pacet before got sent.
+        # therefore this if checks:    
+        #   1. to se if packets come in the right order
+        #   2. to se if the packet has been added before
+        # This if also makes sure each packet in the list has sent an ack before another packet gets added
+        if seq == last_packet_added+1 and last_packet_added == last_ack_sent: 
+            
+            # extract the data from the header
+            data = packet[12:]
+        
+
+            # Puts the data in the list
+            data_list.append(data)
+            print('Added packet nr '+str(seq)+' to the list')
+
+            #update last packet added to the list
+            last_packet_added+=1
+
+         # If at packet nr. 13, we skip sending the ack (the ack got lost).
+        if seq == 13 and test:
+            print('\n\nDroppet ack nr 13\n\n')
+            
+            # set to false so that the skip only happens once.
+            test = False
+            
+        else:
+            # Check to make sure to send ack if:
+                # If the packet already has been recv and added to the list
+            # If so an ack is sent to inform client that the packet is received
+            if seq <= last_ack_sent+1:
+                
+                # Arguments in ack packet.
+                ack_number = seq
+                flagg = 4 # sets the ack flag
+
+                #creates and send ACK-msg to server
+                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+                serverSocket.sendto(ack_packet, client_address)
+                sequence_number+=1
+
+                last_ack_sent=ack_number
+                
+                print('Sent ack packet: '+str(ack_number))
+                print('')
+            
+            #sets test to false so packet number 5 does not get skipped. 
+            
+
+
+    filename = join_file(data_list,filename)
+    """   
+    #Tekst fil skrive ut
+    
+    f = open(filename, 'r')
+    file_content = f.read()
+    print(file_content)
+    
+    """
+
+    try:
+        # Åpne bildet
+        img = Image.open(filename)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+        
+
+    # METHOD TO CLOSE CONNECTION?
+
+
+
+# ------------------------------------------------------------------------------#
+#                                End of GBN                                     #
+# ------------------------------------------------------------------------------#
+
+
+
+    
+
 def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, test):
     # Array contains data packet
     data_list = file_splitting(file_sent) # split file to smaller parts
@@ -313,7 +429,7 @@ def stop_and_wait_server(serverSocket, file_name, test):
                 break
 
             data_from_msg = client_msg[12:]
-            if "skip_ack" in test and ack_number_of_server == 35:
+            if test and ack_number_of_server == 35:
                 print(f"drop ack {ack_number_of_server}")
                 ack_number_of_server += 1 # testing. CAN DELETE
                 
@@ -544,7 +660,7 @@ def SR_server(serverSocket, file_name, test):
                 
                 break
 
-            elif seq == 100 and "skip_ack" in test: # DROP ACK TESTING
+            elif seq == 100 and test: # DROP ACK TESTING
                 print("drop ack 100")
                 test = "hihi"
                 last_ack_sent += 1 # Skip to the next ACK message
@@ -600,122 +716,6 @@ def SR_server(serverSocket, file_name, test):
             
 
 
-def GBN_server(window, filename, serverSocket, test): #do we need window?
-    data_list = []
-
-    emptydata=b''
-    sequence_number = 0
-    ack_number = 0
-    window = window
-    flagg = 0
-    last_packet_added = -1
-    last_ack_sent = -1
-
-    
-
-    while True:
-
-        packet, client_address = serverSocket.recvfrom(2048)
-                
-        # Extracting the header
-        header = packet[:12]
-
-        # parsing the header
-        seq, ack, flagg, win = parse_header(header)
-        print('\nReceived a packet with seq: '+str(seq))
-
-        #parsing the flags
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-
-        # check if this is a fin message
-        if fin_flagg == 2:
-            print("Finished receivind packets")
-            break
-
-       
-        # A packet should not be added if the ack of the pacet before got sent.
-        # therefore this if checks:    
-        #   1. to se if packets come in the right order
-        #   2. to se if the packet has been added before
-        # This if also makes sure each packet in the list has sent an ack before another packet gets added
-        if seq == last_packet_added+1 and last_packet_added == last_ack_sent: 
-            
-            # extract the data from the header
-            data = packet[12:]
-        
-
-            # Puts the data in the list
-            data_list.append(data)
-            print('Added packet nr '+str(seq)+' to the list')
-
-            #update last packet added to the list
-            last_packet_added+=1
-
-         # If at packet nr. 13, we skip sending the ack (the ack got lost).
-        if seq == 13 and test:
-            print('\n\nDroppet ack nr 13\n\n')
-            
-            # set to false so that the skip only happens once.
-            test = False
-            
-        else:
-            # Check to make sure to send ack if:
-                # If the packet already has been recv and added to the list
-            # If so an ack is sent to inform client that the packet is received
-            if seq <= last_ack_sent+1:
-                
-                # Arguments in ack packet.
-                ack_number = seq
-                flagg = 4 # sets the ack flag
-
-                #creates and send ACK-msg to server
-                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
-                serverSocket.sendto(ack_packet, client_address)
-                sequence_number+=1
-
-                last_ack_sent=ack_number
-                
-                print('Sent ack packet: '+str(ack_number))
-                print('')
-            
-            #sets test to false so packet number 5 does not get skipped. 
-            
-
-
-    filename = join_file(data_list,filename)
-    """   
-    #Tekst fil skrive ut
-    
-    f = open(filename, 'r')
-    file_content = f.read()
-    print(file_content)
-    
-    """
-
-    try:
-        # Åpne bildet
-        img = Image.open(filename)
-
-        # Skriv ut bildet i terminalen
-        img.show()
-
-    except IOError:
-        print("Kan ikke åpne bildefilen")
-        
-
-    # METHOD TO CLOSE CONNECTION?
-
-
-
-# ------------------------------------------------------------------------------#
-#                                End of GBN                                     #
-# ------------------------------------------------------------------------------#
-
-
-
-    
-
-
 # ------------------------------------------------------------------------------#
 #                                 Server side                                   #
 # ------------------------------------------------------------------------------#
@@ -763,9 +763,9 @@ def connection_establishment_server(serverSocket, modus, filename, test):
                 if 'GBN' in modus:
                     GBN_server(window,filename,serverSocket, test)
                 if "SAW" in modus:
-                    stop_and_wait_server(serverSocket, file_name, test)
+                    stop_and_wait_server(serverSocket, filename, test)
                 elif "SR" in modus:
-                    SR_server(serverSocket, file_name, test)
+                    SR_server(serverSocket, filename, test)
             else:
                 print("Error: ACK not received!")
 
@@ -866,11 +866,11 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
             
                 #which modus the user wants to run in
                 if modus == "SAW":
-                    stop_and_wait_client(file_sent, clientSocket, server_IP_adress, server_port, test)
+                    stop_and_wait_client(filename, clientSocket, server_IP_adress, server_port, test)
                 elif modus == "GBN":
                     GBN_client(window,filename,clientSocket,serverAddr, test)
                 else:
-                    SR_client(clientSocket, serverAddr, test, file_sent, window_size)
+                    SR_client(clientSocket, serverAddr, test, filename, window_size)
                
                 
         
