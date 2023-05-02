@@ -803,7 +803,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     #Sends packet to server
     clientSocket.sendto(say_hi_to_server, (server_IP_adress, server_port))
     
-    rtt=roundtriptime(server_IP_adress,bonus)
+    rtt=roundtriptime(bonus, server_IP_adress)
     #set timeout
     clientSocket.settimeout(rtt)
 
@@ -920,7 +920,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
-parser.add_argument('-t','--test', type=str, help='use this flag to run the program test mode. On client: loss - On server: dropack')
+parser.add_argument('-t','--test', type=str, default="", help='use this flag to run the program test mode. On client: loss - On server: dropack')
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
