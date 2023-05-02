@@ -301,8 +301,6 @@ def GBN_server(window, filename, serverSocket, test): #do we need window?
 # ------------------------------------------------------------------------------#
 
 def connection_establishment_server(serverSocket, modus, filename, test):
-    if test:
-        print('Test er true')
 
     #Receives SYN packet from client
     SYN_from_client, client_Addr = serverSocket.recvfrom(2048) #returns the msg and the address
