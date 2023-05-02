@@ -82,6 +82,8 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r SR  -w 10 -t loss -f hei.JPG
 
 ---
 
+## BONUS
+
 
 ## Install
 
