@@ -51,8 +51,6 @@ def parse_flags(flags): # get the values of syn, ack and fin
 
 def file_splitting(file_sent):
     list = []
-def file_splitting(file_sent):
-    list = []
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
@@ -72,10 +70,44 @@ def join_file(list, filename):
 # ------------------------------------------------------------------------------#
 
 
+# ------------------------------------------------------------------------------#
+#                           Close connection                                    #
+# ------------------------------------------------------------------------------#
+
+def close_connection_client(clientSocket, server_Addr):
+    data = b''
+    sequence_number = 0
+    acknowledgement_number = 0
+    window = 0
+    flags = 2
+    fin_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
+    clientSocket.sendto(fin_packet, server_Addr)
+
+    try:
+        close_msg, serverAddr = clientSocket.recvfrom(2048)
+        seq, ack, flagg, win = parse_header(close_msg)
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+        if ack_flagg == 4: # check if this is ACK message
+            print("Close connection from client!!!")
+    except error:
+        print("Can not close at the moment!!!")
+
+def close_connection_server(serverSocket, client_addr):
+    # create ACK
+    sequence_number = 0
+    acknowledgment_number = 0
+    window = 64000
+    flagg = 4 # ACK flag sets here, and the decimal is
+    # and send ACK back to client for confirmation
+    ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, b'')
+    serverSocket.sendto(ACK_packet, client_addr) # send SYN ACK to clie
+    
+    print("The transfer is done! Server close now!!!!")
 
 
-
-
+# ------------------------------------------------------------------------------#
+#                         Done close connection                                 #
+# ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 #                                 GBN                                           #
 # ------------------------------------------------------------------------------#
@@ -95,7 +127,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
     acknowledgement_number = 0
     #window = 0 # sende med window = 0 eller window = window? Er det bare server som skal sende window?
     flags = 0
-    
+    print(f'Window: {window}')
     
     while sequence_id < len(data_list):
         seq_number = sequence_id
@@ -110,10 +142,10 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
             #The while arguments ^:
             #Can only send packets if there is room in the window
             #Cannot send data if there is no data left in the list
-            if seq_number == 16 and test:
+            if seq_number == 16 and "loss" in test:
                 print('\n\n Dropper pakke nr 16')
                 seq_number+=1
-                test = False
+                test = "something else"
             else:    
                 # Creating and sending packet
                 data = data_list[seq_number] #getting packets to send in the right order
@@ -162,17 +194,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
         except timeout:
             print("Error: Timeout")
     
-
-
-    seq_number=0
-    acknowledgement_number=0
-    flagg=2
-    emptydata=b''
-    fin_packet = create_packet(seq_number,acknowledgement_number,flagg,window,emptydata)
-    clientSocket.sendto(fin_packet,server_Address) 
-    print('Sendt fin packet')
-
-    #METHOD TO CLOSE CONNECTION??
+    close_connection_client(clientSocket, server_Address)
 
 
 
@@ -182,7 +204,7 @@ def GBN_server(filename, serverSocket, test):
     emptydata=b''
     sequence_number = 0
     ack_number = 0
-    window = window
+    window = 64000
     flagg = 0
     last_packet_added = -1
     last_ack_sent = -1
@@ -205,7 +227,7 @@ def GBN_server(filename, serverSocket, test):
 
         # check if this is a fin message
         if fin_flagg == 2:
-            print("Finished receivind packets")
+            close_connection_server(serverSocket, client_address)
             break
 
        
@@ -228,11 +250,11 @@ def GBN_server(filename, serverSocket, test):
             last_packet_added+=1
 
          # If at packet nr. 13, we skip sending the ack (the ack got lost).
-        if seq == 13 and test:
+        if seq == 13 and "dropack" in test:
             print('\n\nDroppet ack nr 13\n\n')
             
             # set to false so that the skip only happens once.
-            test = False
+            test = "something else"
             
         else:
             # Check to make sure to send ack if:
@@ -312,10 +334,10 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
         flags = 0
 
         #test - drop ack
-        if sequence_id == 30 and test:
+        if sequence_id == 30 and "loss" in test:
                 print('\n\n Dropper pakke nr 30')
                 sequence_id+=1
-                test = False
+                test = "something else"
                 
         #else:
             #creating packet, and sending
@@ -353,14 +375,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
             
             print("Error: Timeout")
                 
-    print('Ute av While')
-    seq_number=0
-    acknowledgement_number=0
-    flagg=2
-    emptydata=b''
-    fin_packet = create_packet(seq_number,acknowledgement_number,flagg,window,emptydata)
-    clientSocket.sendto(fin_packet,serverAddr) 
-    print('Sendt fin packet')
+    close_connection_client(clientSocket, serverAddr)
 
 def SAW_Server(filename,serverSocket, test):
     #list with the data
@@ -389,7 +404,7 @@ def SAW_Server(filename,serverSocket, test):
 
         # check if this is a fin message
         if fin_flagg == 2:
-            print("Finished receivind packets")
+            close_connection_server(serverSocket, client_address)
             break
 
         #checks to see if packets come in the right order.
@@ -401,10 +416,10 @@ def SAW_Server(filename,serverSocket, test):
            
 
             # If at packet nr. 13, we skip sending the ack (the ack got lost).
-            if seq == 13 and test:
+            if seq == 13 and "dropack" in test:
                 print('\n\nDroppet ack nr 13\n\n')
                 # set to false so that the skip only happens once.
-                test = False
+                test = "something else"
                 print('verdien til test settes til', test)
             
             else:
@@ -478,10 +493,10 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
         print("\n\n")
         for packet in formatted_packets_list[first_in_wd:first_in_wd+WINDOW_SIZE]: # extract a slice of the data_list. F.eks if base = 0 --> extract packet 0,1,2,3,4
             
-            if "Loss" in test and packet["seq_num"] == 8: # drop packet test
+            if "loss" in test and packet["seq_num"] == 8: # drop packet test
                 next_in_wd += 1
                 print("drop pakke 8")
-                test = "hihi"
+                test = "something else"
                 
             # send all packets in this window
             if packet["seq_num"] >= next_in_wd: 
@@ -560,25 +575,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
                         first_in_wd += 1 # update first in window since it has ignored the lost packet
             base = first_in_wd # update base to the next new window
     
-    print("Done transferring")
-    # transferring is done. Send FIN-packet
-    data = b''
-    sequence_number = 0
-    acknowledgement_number = 0
-    window = 0
-    flags = 2
-    fin_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
-    clientSocket.sendto(fin_packet, server_Addr)
-    # Get ACK message and close connection
-    try:
-        close_msg, serverAddr = clientSocket.recvfrom(2048)
-        seq, ack, flagg, win = parse_header(close_msg)
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-        if ack_flagg == 4: # check if this is ACK message
-            print("Close connection from client!!!")
-            print(f"Total transferred: {total_sent}")
-    except error:
-        print("Can not close at the moment!!!")
+    close_connection_client(clientSocket, server_Addr)
 
 
 def SR_server(serverSocket, file_name, test):
@@ -605,25 +602,12 @@ def SR_server(serverSocket, file_name, test):
             syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
 
             if fin_flagg == 2: # close signal from client
-                
-                # create ACK
-                sequence_number = 0
-                acknowledgment_number = 0
-                window = 64000
-                flagg = 4 # ACK flag sets here, and the decimal is 4
-
-                # and send ACK back to client for confirmation
-                ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, empty_data)
-                serverSocket.sendto(ACK_packet, client_addr) # send SYN ACK to client
-
-                print(f"Total transferred: {total_received}")
-                print("The transfer is done! Server close now!!!!")
-                
+                close_connection_server(serverSocket, client_addr)
                 break
 
-            elif seq == 100 and test: # DROP ACK TESTING
+            elif seq == 100 and "dropack" in test: # DROP ACK TESTING
                 print("drop ack 100")
-                test = "hihi"
+                test = "something else"
                 last_ack_sent += 1 # Skip to the next ACK message
             
             elif seq >= last_ack_sent + 1: # Rather than throwing away packets that arrive in the wrong order, still put the packets in the list
@@ -726,7 +710,7 @@ def connection_establishment_server(serverSocket, modus, filename, test):
                 print("got ACK from client!") # CAN DELETE
                 print("Connection established with ", client_Addr)
                 if 'GBN' in modus:
-                    GBN_server(window,filename,serverSocket, test)
+                    GBN_server(filename,serverSocket, test)
                 if "SAW" in modus:
                     SAW_Server(filename, serverSocket,  test)
                 elif "SR" in modus:
@@ -744,6 +728,7 @@ def connection_establishment_server(serverSocket, modus, filename, test):
     
 
 def server_main(bind_IPadress, port, modus, filename, test):
+    # erver_main(args.bind, args.port, args.modus, args.file, args.test, args.modus, args.file, args.test)
     server_host = bind_IPadress
     server_port = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -833,7 +818,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
                 if modus == "SAW":
                     SAW_Client(filename, clientSocket, serverAddr, test)
                 elif modus == "GBN":
-                    GBN_client(window,filename,clientSocket,serverAddr, test)
+                    GBN_client(window_size,filename,clientSocket,serverAddr, test)
                 else:
                     SR_client(clientSocket, serverAddr, test, filename, window_size)
                
@@ -901,7 +886,7 @@ group1.add_argument('-b', '--bind', type=check_ip, default='127.0.0.1', help='IP
 group2.add_argument('-c', '--client', action='store_true', help='use this flag to run the program in client mode')
 #serverip argument with a check using the checkip function implemented over
 group2.add_argument('-I', '--serverip', default='127.0.0.1',type=check_ip, help='allows the user to select the IP address of the server' )
-group2.add_argument('-w','--window', type=int, help='Specify window size')
+group2.add_argument('-w','--window', type=int, default=5, help='Specify window size')
 # ------------------------------------ Done argument for Client ---------------------------------------------------------------#
 
 
@@ -911,7 +896,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
-parser.add_argument('-t','--test', action='store_true', help='use this flag to run the program test mode which looses a packet')
+parser.add_argument('-t','--test', type=str, help='use this flag to run the program test mode. On client: loss - On server: dropack')
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
@@ -932,6 +917,6 @@ elif args.file is None: #
 
 else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
-        server_main(args.bind, args.port, args.modus, args.file, args.test, args.modus, args.file, args.test)
+        server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
         client_main(args.serverip, args.port, args.modus, args.file, args.test, args.window)
