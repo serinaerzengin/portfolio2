@@ -1,32 +1,23 @@
 # Portfolio2
 This application is a simple transport protocol that provides reliable data delivery on top of UDP.
 
-## Instructions to run application - with default options
-1. Run the `server` first with:
-
-```
-python3 application.py -s
-```
-2. Run the `client` with:
-
-```
-python3 application.py -c
-```
 <br />
 
-## Instructions to run application - with available options
+## Instructions to run application -  available options
 <br />
 
 ### Available options to invoke the server:
-
+`-s` or `--server` = enable the **server mode**. \
 `-b` or `--bind` = Allows to select **ip address** of the server's interface. \
 `-p` or `--port` = Allows to select **port number** (Range: [1024-65535]).\
 `-r` or `--modus` =  Allows to choose the **reliable method** (SAW, GBN, SR).\
 `-t` or `--test` =  Allows to choose the **test mode** (dropack).
+
 <br />
 
 
 ### Available options to invoke the client:
+`-c` or `--client` = enable the **client mode**. \
 `-I` or `--serverip` = Selects the **ip address** of the server. \
 `-p` or `--port` = Allows to select the server's **port number** (Range: [1024-65535]).\
 `-r` or `--modus` =  Allows to choose the **reliable method** (SAW, GBN, SR).\
