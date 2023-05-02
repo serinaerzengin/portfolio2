@@ -130,10 +130,9 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
         
         print('TRYING TO GET ACK FROM SERVER')
         # Try to receive an ack for the sent packets
+        clientSocket.settimeout(0.5)
         try:    
-
             while True: #Receiving ack from server
-                clientSocket.settimeout(0.5)
                 #reveices packer from server
                 ack_from_server, serverAddr = clientSocket.recvfrom(2048)
 
@@ -155,18 +154,11 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
                 else:
                     print('Break, fordi '+str(first_in_window)+' er ikke det samme som '+ str(ack))
                     break
-        except TimeoutError:
-            "Error: Timeout"
+        except timeout:
+            print("Error: Timeout")
     
-    
-        
 
 
-            #Burde jeg heller kode med å kalle på metoder som sender pakker også ha en while som konstant lytter etter ack?
-            # Og dersom acken aldri kommer blir det timeout? 
-
-
-    print('Ute av While')
     seq_number=0
     acknowledgement_number=0
     flagg=2
@@ -349,6 +341,7 @@ def connection_establishment_server(serverSocket, modus, filename, test):
             print("Error, Ack_number does not match")
     else:
         print("Error: SYN not received!")
+
     
 
     
