@@ -228,6 +228,7 @@ def GBN_server(filename, serverSocket, test):
         # check if this is a fin message
         if fin_flagg == 2:
             close_connection_server(serverSocket, client_address)
+            break
 
        
         # A packet should not be added if the ack of the pacet before got sent.
@@ -404,6 +405,7 @@ def SAW_Server(filename,serverSocket, test):
         # check if this is a fin message
         if fin_flagg == 2:
             close_connection_server(serverSocket, client_address)
+            break
 
         #checks to see if packets come in the right order.
         if seq == (last_ack_number+1): 
@@ -600,8 +602,8 @@ def SR_server(serverSocket, file_name, test):
             syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
 
             if fin_flagg == 2: # close signal from client
-                
                 close_connection_server(serverSocket, client_addr)
+                break
 
             elif seq == 100 and test: # DROP ACK TESTING
                 print("drop ack 100")
