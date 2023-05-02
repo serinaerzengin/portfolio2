@@ -95,7 +95,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
     acknowledgement_number = 0
     #window = 0 # sende med window = 0 eller window = window? Er det bare server som skal sende window?
     flags = 0
-    
+    print(f'Window: {window}')
     
     while sequence_id < len(data_list):
         seq_number = sequence_id
@@ -182,7 +182,7 @@ def GBN_server(filename, serverSocket, test):
     emptydata=b''
     sequence_number = 0
     ack_number = 0
-    window = window
+    window = 64000
     flagg = 0
     last_packet_added = -1
     last_ack_sent = -1
@@ -478,7 +478,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
         print("\n\n")
         for packet in formatted_packets_list[first_in_wd:first_in_wd+WINDOW_SIZE]: # extract a slice of the data_list. F.eks if base = 0 --> extract packet 0,1,2,3,4
             
-            if "Loss" in test and packet["seq_num"] == 8: # drop packet test
+            if test and packet["seq_num"] == 8: # drop packet test
                 next_in_wd += 1
                 print("drop pakke 8")
                 test = "hihi"
@@ -726,7 +726,7 @@ def connection_establishment_server(serverSocket, modus, filename, test):
                 print("got ACK from client!") # CAN DELETE
                 print("Connection established with ", client_Addr)
                 if 'GBN' in modus:
-                    GBN_server(window,filename,serverSocket, test)
+                    GBN_server(filename,serverSocket, test)
                 if "SAW" in modus:
                     SAW_Server(filename, serverSocket,  test)
                 elif "SR" in modus:
@@ -744,6 +744,7 @@ def connection_establishment_server(serverSocket, modus, filename, test):
     
 
 def server_main(bind_IPadress, port, modus, filename, test):
+    # erver_main(args.bind, args.port, args.modus, args.file, args.test, args.modus, args.file, args.test)
     server_host = bind_IPadress
     server_port = port
     serverSocket = socket(AF_INET, SOCK_DGRAM)
@@ -833,7 +834,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
                 if modus == "SAW":
                     SAW_Client(filename, clientSocket, serverAddr, test)
                 elif modus == "GBN":
-                    GBN_client(window,filename,clientSocket,serverAddr, test)
+                    GBN_client(window_size,filename,clientSocket,serverAddr, test)
                 else:
                     SR_client(clientSocket, serverAddr, test, filename, window_size)
                
@@ -901,7 +902,7 @@ group1.add_argument('-b', '--bind', type=check_ip, default='127.0.0.1', help='IP
 group2.add_argument('-c', '--client', action='store_true', help='use this flag to run the program in client mode')
 #serverip argument with a check using the checkip function implemented over
 group2.add_argument('-I', '--serverip', default='127.0.0.1',type=check_ip, help='allows the user to select the IP address of the server' )
-group2.add_argument('-w','--window', type=int, help='Specify window size')
+group2.add_argument('-w','--window', type=int, default=5, help='Specify window size')
 # ------------------------------------ Done argument for Client ---------------------------------------------------------------#
 
 
@@ -932,6 +933,6 @@ elif args.file is None: #
 
 else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
-        server_main(args.bind, args.port, args.modus, args.file, args.test, args.modus, args.file, args.test)
+        server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
         client_main(args.serverip, args.port, args.modus, args.file, args.test, args.window)
