@@ -4,9 +4,8 @@ import argparse
 import ipaddress
 import sys
 from PIL import Image
-import random
-from PIL import Image
-import time
+import ping3
+
 
 # ------------------------------------------------------------------------------#
 #                                   Header handling                             #
@@ -41,9 +40,28 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                              Done header handling                             #
 # ------------------------------------------------------------------------------#
 
+# ------------------------------------------------------------------------------#
+#                                      BONUS                                    #
+# ------------------------------------------------------------------------------#
 
+def roundtriptime(bonus,IPaddress):
+    if bonus:
+        rtt = ping3.ping(IPaddress)
+        
+        if rtt is None:
+            print(f"Failed to get round trip time from {IPaddress}")
+            rtt = 0.5
+        
+    else:
+        rtt=0.5
 
+    return rtt
+    
+    
 
+# ------------------------------------------------------------------------------#
+#                                   END OF BONUS                                #
+# ------------------------------------------------------------------------------#
 
 # ------------------------------------------------------------------------------#
 #                                Handle file                                    #
@@ -108,13 +126,17 @@ def close_connection_server(serverSocket, client_addr):
 # ------------------------------------------------------------------------------#
 #                         Done close connection                                 #
 # ------------------------------------------------------------------------------#
+
+
+
+
 # ------------------------------------------------------------------------------#
 #                                 GBN                                           #
 # ------------------------------------------------------------------------------#
 
 
 
-def GBN_client(window, filename, clientSocket, server_Address, test):
+def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
     data_list = file_splitting(filename)
 
     sequence_id = 0
@@ -167,7 +189,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
         
         print('TRYING TO GET ACK FROM SERVER')
         # Try to receive an ack for the sent packets
-        clientSocket.settimeout(0.5)
+        clientSocket.settimeout(rtt)
         try:    
             while True: #Receiving ack from server
                 #reveices packer from server
@@ -318,7 +340,7 @@ def GBN_server(filename, serverSocket, test):
 #                                 STOP AND WAIT                -                #
 # ------------------------------------------------------------------------------#
 
-def SAW_Client(filename,clientSocket,serverAddr, test):
+def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
     #Data_list contains data packets
     data_list = file_splitting(filename)
 
@@ -346,7 +368,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
         clientSocket.sendto(packet,serverAddr)
 
         #timeout
-        clientSocket.settimeout(0.5)
+        clientSocket.settimeout(rtt)
         try:    
             #reveices packer from server
             ack_from_server, serverAddr = clientSocket.recvfrom(2048)
@@ -466,7 +488,7 @@ def SAW_Server(filename,serverSocket, test):
 #                                   SR                                          #
 # ------------------------------------------------------------------------------#
  
-def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
+def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     # data list from file
     raw_datalist = file_splitting(file_sent) # array contains raw data
 
@@ -486,7 +508,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
     first_in_wd = 0 # base a.k.a "first" packet in window
     next_in_wd = 0 # next packet in window
     base = 0 # keep track of window
-    clientSocket.settimeout(0.5)
+    clientSocket.settimeout(rtt)
     # loop through data list and send packets within WINDOW_SIZE
     while first_in_wd < len(raw_datalist):
         # send packets in window size
@@ -767,7 +789,7 @@ def server_main(bind_IPadress, port, modus, filename, test):
 #                                  Client side                                  #
 # ------------------------------------------------------------------------------#
 
-def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, filename, test, window_size):
+def connection_establishment_client(clientSocket, server_IP_adress, server_port, modus, filename, test, window_size, bonus):
 
     # Create a empty packet with SYN flag
     data = b''
@@ -781,8 +803,9 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     #Sends packet to server
     clientSocket.sendto(say_hi_to_server, (server_IP_adress, server_port))
     
+    rtt=roundtriptime(server_IP_adress,bonus)
     #set timeout
-    clientSocket.settimeout(0.5)
+    clientSocket.settimeout(rtt)
 
     # wait for a response from the server
     try:
@@ -816,11 +839,11 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
             
                 #which modus the user wants to run in
                 if modus == "SAW":
-                    SAW_Client(filename, clientSocket, serverAddr, test)
+                    SAW_Client(filename, clientSocket, serverAddr, test, rtt)
                 elif modus == "GBN":
-                    GBN_client(window_size,filename,clientSocket,serverAddr, test)
+                    GBN_client(window_size,filename,clientSocket,serverAddr, test, rtt)
                 else:
-                    SR_client(clientSocket, serverAddr, test, filename, window_size)
+                    SR_client(clientSocket, serverAddr, test, filename, window_size, rtt)
                
                 
         
@@ -829,7 +852,7 @@ def connection_establishment_client(clientSocket, server_IP_adress, server_port,
     except timeout:
         print("Time out while waiting for SYN-ACK") 
 
-def client_main(server_ip_adress, server_port, modus, filename, test, window_size):
+def client_main(server_ip_adress, server_port, modus, filename, test, window_size,bonus):
     serverName = server_ip_adress
     serverPort = server_port
 
@@ -837,7 +860,7 @@ def client_main(server_ip_adress, server_port, modus, filename, test, window_siz
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # sending the arguements in this method to establish a connection with server
-    connection_establishment_client(clientSocket, serverName, serverPort, modus, filename,test, window_size)
+    connection_establishment_client(clientSocket, serverName, serverPort, modus, filename,test, window_size,bonus)
 
 
 
@@ -887,6 +910,7 @@ group2.add_argument('-c', '--client', action='store_true', help='use this flag t
 #serverip argument with a check using the checkip function implemented over
 group2.add_argument('-I', '--serverip', default='127.0.0.1',type=check_ip, help='allows the user to select the IP address of the server' )
 group2.add_argument('-w','--window', type=int, default=5, help='Specify window size')
+group2.add_argument('-B','--bonus', action='store_true', help='use this flag to acitvate the bonus task where RTT is timeout')
 # ------------------------------------ Done argument for Client ---------------------------------------------------------------#
 
 
@@ -919,4 +943,4 @@ else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
         server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
-        client_main(args.serverip, args.port, args.modus, args.file, args.test, args.window)
+        client_main(args.serverip, args.port, args.modus, args.file, args.test, args.window,args.bonus)
