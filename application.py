@@ -896,7 +896,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
-parser.add_argument('-t','--test', type=str, help='use this flag to run the program test mode. On client: loss - On server: dropack')
+parser.add_argument('-t','--test', type=str, help='use this flag to run the program test mode. On client: loss - On server: dropack', default="hihi")
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
