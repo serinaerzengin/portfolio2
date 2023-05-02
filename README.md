@@ -86,5 +86,6 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r SR -w 10 -t loss -f hei.JPG
 ## Install
 
 For å skrive ut bilde: python3 -m pip install Pillow  
+python3 -m pip install ping3
 import i toppen: from PIL import Image
 tok et par sekunder fra det ble lasta ned til den import linja begynte å funke (ikke lyse rødt)
