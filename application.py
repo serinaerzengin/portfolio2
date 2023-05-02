@@ -142,10 +142,10 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
             #The while arguments ^:
             #Can only send packets if there is room in the window
             #Cannot send data if there is no data left in the list
-            if seq_number == 16 and test:
+            if seq_number == 16 and "loss" in test:
                 print('\n\n Dropper pakke nr 16')
                 seq_number+=1
-                test = False
+                test = "something else"
             else:    
                 # Creating and sending packet
                 data = data_list[seq_number] #getting packets to send in the right order
@@ -250,11 +250,11 @@ def GBN_server(filename, serverSocket, test):
             last_packet_added+=1
 
          # If at packet nr. 13, we skip sending the ack (the ack got lost).
-        if seq == 13 and test:
+        if seq == 13 and "dropack" in test:
             print('\n\nDroppet ack nr 13\n\n')
             
             # set to false so that the skip only happens once.
-            test = False
+            test = "something else"
             
         else:
             # Check to make sure to send ack if:
@@ -334,10 +334,10 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
         flags = 0
 
         #test - drop ack
-        if sequence_id == 30 and test:
+        if sequence_id == 30 and "loss" in test:
                 print('\n\n Dropper pakke nr 30')
                 sequence_id+=1
-                test = False
+                test = "something else"
                 
         #else:
             #creating packet, and sending
@@ -416,10 +416,10 @@ def SAW_Server(filename,serverSocket, test):
            
 
             # If at packet nr. 13, we skip sending the ack (the ack got lost).
-            if seq == 13 and test:
+            if seq == 13 and "dropack" in test:
                 print('\n\nDroppet ack nr 13\n\n')
                 # set to false so that the skip only happens once.
-                test = False
+                test = "something else"
                 print('verdien til test settes til', test)
             
             else:
@@ -493,10 +493,10 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
         print("\n\n")
         for packet in formatted_packets_list[first_in_wd:first_in_wd+WINDOW_SIZE]: # extract a slice of the data_list. F.eks if base = 0 --> extract packet 0,1,2,3,4
             
-            if test and packet["seq_num"] == 8: # drop packet test
+            if "loss" in test and packet["seq_num"] == 8: # drop packet test
                 next_in_wd += 1
                 print("drop pakke 8")
-                test = "hihi"
+                test = "something else"
                 
             # send all packets in this window
             if packet["seq_num"] >= next_in_wd: 
@@ -605,9 +605,9 @@ def SR_server(serverSocket, file_name, test):
                 close_connection_server(serverSocket, client_addr)
                 break
 
-            elif seq == 100 and test: # DROP ACK TESTING
+            elif seq == 100 and "dropack" in test: # DROP ACK TESTING
                 print("drop ack 100")
-                test = "hihi"
+                test = "something else"
                 last_ack_sent += 1 # Skip to the next ACK message
             
             elif seq >= last_ack_sent + 1: # Rather than throwing away packets that arrive in the wrong order, still put the packets in the list
@@ -896,7 +896,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
-parser.add_argument('-t','--test', action='store_true', help='use this flag to run the program test mode which looses a packet')
+parser.add_argument('-t','--test', type=str, help='use this flag to run the program test mode. On client: loss - On server: dropack')
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
