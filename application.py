@@ -88,7 +88,6 @@ def GBN_client(window, filename, clientSocket, server_Address, test):
     sequence_id = 0
     first_in_window = 0
     next_in_window = 0
-    window=5
     print('Lengden av data listen: '+str(len(data_list)))
     
     data = data_list[sequence_id]
@@ -290,6 +289,12 @@ def GBN_server(filename, serverSocket, test):
 
 
 
+
+
+
+# ------------------------------------------------------------------------------#
+#                              STOP AND WAIT                                    #
+# ------------------------------------------------------------------------------#
     
 
 def stop_and_wait_client(file_sent, clientSocket, server_IPadress, server_port, test):
@@ -489,6 +494,18 @@ def stop_and_wait_server(serverSocket, file_name, test):
     img = Image.open(myfile)
     img.show()
     
+
+# ------------------------------------------------------------------------------#
+#                             END OF  STOP AND WAIT                             #
+# ------------------------------------------------------------------------------#
+
+
+
+
+
+# ------------------------------------------------------------------------------#
+#                                   SR                                          #
+# ------------------------------------------------------------------------------#
  
 def SR_client(clientSocket, server_Addr, test, file_sent, window_size):
     # data list from file
@@ -710,10 +727,14 @@ def SR_server(serverSocket, file_name, test):
     img = Image.open(myfile)
     img.show()
 
-                
+# ------------------------------------------------------------------------------#
+#                                END OF SR                                      #
+# ------------------------------------------------------------------------------#              
             
 
             
+
+
 
 
 # ------------------------------------------------------------------------------#
