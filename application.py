@@ -64,61 +64,61 @@ def join_file(list, filename):
 # ------------------------------------------------------------------------------#
 
 def SAW_Client(filename,clientSocket,serverAddr, test):
-    #Dataene vi skal sende er splittet opp og satt inn i array
+    #Data_list contains data packets
     data_list = file_splitting(filename)
 
-    #starter på 0 
+    #starts at 0 
     sequence_id = 0
 
-    #sa lenge det er data a sende
+   
+    #Send data as long as the data_list is not empty
     while sequence_id < len(data_list):
-        #legger inn riktig data del
         
         acknowledgement_number = 0
         window = 0 
         flags = 0
 
-        #test sender feil rekkefølge
-        if sequence_id == 16 and test:
-                print('\n\n Dropper pakke nr 16')
+        #test - drop ack
+        if sequence_id == 30 and test:
+                print('\n\n Dropper pakke nr 30')
                 sequence_id+=1
                 test = False
                 
-        else:
+        #else:
             #creating packet, and sending
-            data = data_list[sequence_id]
-            packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
-            clientSocket.sendto(packet,serverAddr)
+        data = data_list[sequence_id]
+        packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
+        clientSocket.sendto(packet,serverAddr)
 
-
+        #timeout
+        clientSocket.settimeout(0.5)
         try:    
+            #reveices packer from server
+            ack_from_server, serverAddr = clientSocket.recvfrom(2048)
 
-            while True: #Receiving ack from server
-                clientSocket.settimeout(0.5)
-
-                #reveices packer from server
-                ack_from_server, serverAddr = clientSocket.recvfrom(2048)
-
-                 # parsing the header since the ack packet should be with no data
-                seq, ack, flagg, win = parse_header(ack_from_server)
-                print('Fikk ack: '+str(ack))
+            # parsing the header since the ack packet should be with no data
+            seq, ack, flagg, win = parse_header(ack_from_server)
+            print('Fikk ack: '+str(ack))
                 
-                # Checks if the acknowledgement is for the right packet
-                if  sequence_id == ack:
-                    # parse flags
-                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+            # Checks if the acknowledgement is for the right packet
+            if  sequence_id == ack:
+                # parse flags
+                syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
 
-                    # Check if it has ack flagg marked
-                    if ack_flagg == 4:
-                        #oker hvis vi har faatt riktig pakke
-                        sequence_id+=1
-                else:
-                    #hvis ack ikke er som forventet saa oppdaterer vi seq til aa veaere det vi fikk som dupack
-                    sequence_id=ack+1
-                    print('kom inn her')
-                    break
-        except TimeoutError:
-            "Error: Timeout"
+                # Check if it has ack flagg marked
+                if ack_flagg == 4:
+                    #Sequence increases whit 1 if we received the rigth packet
+                    sequence_id+=1
+            else:
+                #if a packet is dropped, server sneds dupack, and we calculate which packet we send next.
+                sequence_id=ack+1
+                print('kom inn her')
+                
+       
+       #if timeout, the sequence number should not be changed. We send packet
+        except timeout:
+            
+            print("Error: Timeout")
                 
     print('Ute av While')
     seq_number=0
@@ -130,7 +130,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test):
     print('Sendt fin packet')
 
 def SAW_Server(filename,serverSocket, test):
-    #listen vi legger data i
+    #list with the data
     data_list = [] 
 
     emptydata=b''
@@ -141,7 +141,7 @@ def SAW_Server(filename,serverSocket, test):
     last_ack_number = -1
 
     while True:
-        #venter paa pakker
+        #waits for packets
         packet, client_address = serverSocket.recvfrom(2048)
         
 
@@ -159,7 +159,7 @@ def SAW_Server(filename,serverSocket, test):
             print("Finished receivind packets")
             break
 
-        #checks to se if packets come in the right order.
+        #checks to see if packets come in the right order.
         if seq == (last_ack_number+1): 
             # extract the data from the header
             data = packet[12:]
@@ -176,7 +176,7 @@ def SAW_Server(filename,serverSocket, test):
             
             else:
                
-                 # Puts the data in the list
+                 #Puts the data in the list
                 data_list.append(data)
                 ack_number=seq
                 flagg = 4 # sets the ack flag
@@ -197,7 +197,7 @@ def SAW_Server(filename,serverSocket, test):
     filename = join_file(data_list,filename)
 
     try:
-        # Åpne bildet
+        # Open picture
         img = Image.open(filename)
 
         # Skriv ut bildet i terminalen
