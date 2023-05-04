@@ -158,18 +158,22 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
     flags = 0
 
     while base < len(data_list): #MÅ HA NOE ANNET ENN TRUE?
-        
-        #Sends packets until the window is full, as long as there is more packet to be sent 
-        while next_to_send < base + window and next_to_send < len(data_list):
 
-            #If packet 16 the dropped
-            if next_to_send == 44 and "loss" in test: ##SJEKK OM DET GÅR MED str(test) og at den da ikke trenger å ha default i argumentet
-                print('\n\nDropper pakke nr 44\n') #SØRG FOR AT DEN FORTSATT SENDER OG IKKE HOPPER OVER DENNE SENDINGEN
-                next_to_send+=1
-                test = "something else"
+         #If packet 44 its dropped and skip one round
+        if next_to_send == 44 and "loss" in test: ##SJEKK OM DET GÅR MED str(test) og at den da ikke trenger å ha default i argumentet
+            print('\n\nDropper pakke nr 44\n') #SØRG FOR AT DEN FORTSATT SENDER OG IKKE HOPPER OVER DENNE SENDINGEN
+            next_to_send+=1
+            test = "something else"
+       
+        #If not packet 44, we send normally
+        else:
+            
+            #Sends packets until the window is full, as long as there is more packet to be sent 
+            while next_to_send < base + window and next_to_send < len(data_list):
 
-            #Else send packet    
-            else:
+            
+                #Ssend packet    
+                
                 seq_number=next_to_send
                 # Creating and sending packet
                 data = data_list[seq_number] #getting packets to send in the right order
@@ -180,33 +184,33 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 #Updates next packet to send, and seq number
                 next_to_send+=1
 
-        # The window is full - now we wait on ack to move the window
+            # The window is full - now we wait on ack to move the window
 
-        clientSocket.settimeout(rtt)
-        
-        try:
-            #reveices ack from server
-            ack_from_server, serverAddr = clientSocket.recvfrom(2048)
+            clientSocket.settimeout(rtt)
             
-            # parsing the header since the ack packet should be with no data
-            seq, ack, flagg, win = parse_header(ack_from_server)
-            print(f'Fikk ack: {ack}\n')
+            try:
+                #reveices ack from server
+                ack_from_server, serverAddr = clientSocket.recvfrom(2048)
+                
+                # parsing the header since the ack packet should be with no data
+                seq, ack, flagg, win = parse_header(ack_from_server)
+                print(f'Fikk ack: {ack}\n')
 
-            # Checks if the acknowledgement is for the right packet. 
-            # The ack should be for the first packet in the window (base)
-            if  base == ack:
-                # parse flags
-                syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+                # Checks if the acknowledgement is for the right packet. 
+                # The ack should be for the first packet in the window (base)
+                if  base == ack:
+                    # parse flags
+                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
 
-                # Check if it has ack flagg marked
-                if ack_flagg == 4:
-                    base+=1 # we move the window
+                    # Check if it has ack flagg marked
+                    if ack_flagg == 4:
+                        base+=1 # we move the window
 
-            
+                
 
-        except timeout:
-            print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
-            next_to_send=base
+            except timeout:
+                print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
+                next_to_send=base
     
     close_connection_client(clientSocket, server_Address)
         
