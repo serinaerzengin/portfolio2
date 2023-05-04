@@ -141,9 +141,13 @@ def close_connection_server(serverSocket, client_addr):
 # ------------------------------------------------------------------------------#
 
 
+
+
 # ------------------------------------------------------------------------------#
-#                                 GBN NEW                                      #
+#                                   GBN                                         #
 # ------------------------------------------------------------------------------#
+
+
 
 def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
     data_list = file_splitting(filename)
@@ -214,106 +218,6 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
     
     close_connection_client(clientSocket, server_Address)
         
-
-
-
-
-
-# ------------------------------------------------------------------------------#
-#                             End of GBN NEW                                   #
-# ------------------------------------------------------------------------------#
-
-
-
-
-
-# ------------------------------------------------------------------------------#
-#                                 GBN OLD                                       #
-# ------------------------------------------------------------------------------#
-
-
-
-def GBN_client_old(window, filename, clientSocket, server_Address, test, rtt):
-    data_list = file_splitting(filename)
-
-    sequence_id = 0
-    first_in_window = 0
-    next_in_window = 0
-    print('Lengden av data listen: '+str(len(data_list)))
-    
-    data = data_list[sequence_id]
-    seq_number = sequence_id
-    acknowledgement_number = 0
-    #window = 0 # sende med window = 0 eller window = window? Er det bare server som skal sende window?
-    flags = 0
-    print(f'Window: {window}')
-    
-    while sequence_id < len(data_list):
-        seq_number = sequence_id
-        next_in_window=first_in_window
-        packets_in_window = next_in_window - first_in_window
-
-        #Tries to send the rest of the packets in the window, before getting ack from the first in window. 
-        #print('Packets in window: '+str(packets_in_window)+' window: '+str(window)+'\n first in window: ' +str(first_in_window)+ ', next in window:'+ str(next_in_window)+'\nseq number: '+str(seq_number))
-        
-        while packets_in_window < window and seq_number < len(data_list):
-
-            #The while arguments ^:
-            #Can only send packets if there is room in the window
-            #Cannot send data if there is no data left in the list
-            if seq_number == 16 and "loss" in test:
-                print('\n\n Dropper pakke nr 16')
-                seq_number+=1
-                test = "something else"
-            else:    
-                # Creating and sending packet
-                data = data_list[seq_number] #getting packets to send in the right order
-                packet = create_packet(seq_number,acknowledgement_number,flags,window,data) 
-                clientSocket.sendto(packet,server_Address) 
-                print('Sendt seq: '+str(seq_number))
-
-                #After sending packet, we update:
-                # whats nest posision in the window
-                # how many packets in the window and 
-                # the seq_number of the next packet
-                next_in_window+=1
-                
-                packets_in_window =  next_in_window - first_in_window
-                
-                seq_number +=1
-
-            # The window should be full - now we wait on ack to move the window
-        
-        print('TRYING TO GET ACK FROM SERVER')
-        # Try to receive an ack for the sent packets
-        clientSocket.settimeout(rtt)
-        try:    
-            while True: #Receiving ack from server
-                #reveices packer from server
-                ack_from_server, serverAddr = clientSocket.recvfrom(2048)
-
-                # parsing the header since the ack packet should be with no data
-                seq, ack, flagg, win = parse_header(ack_from_server)
-                print('Fikk ack: '+str(ack))
-
-                # Checks if the acknowledgement is for the right packet. 
-                # The ack should be for the first packet in the window. 
-                if  first_in_window == ack:
-                    # parse flags
-                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-
-                    # Check if it has ack flagg marked
-                    if ack_flagg == 4:
-                        # sequence number oker for neste pakke
-                        sequence_id += 1 #the next in sequence_id will be the next packet to be send
-                        first_in_window+=1 # we move the window
-                else:
-                    print('Break, fordi '+str(first_in_window)+' er ikke det samme som '+ str(ack))
-                    break
-        except timeout:
-            print("Error: Timeout")
-    
-    close_connection_client(clientSocket, server_Address)
 
 
 
@@ -440,7 +344,7 @@ def GBN_server(filename, serverSocket, test):
 
 
 # ------------------------------------------------------------------------------#
-#                             End of GBN OLD                                    #
+#                                 End of GBN                                    #
 # ------------------------------------------------------------------------------#
 
 
