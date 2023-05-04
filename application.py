@@ -674,7 +674,6 @@ def SR_server(serverSocket, file_name, test):
                 total_received += len(data_from_msg) # TESTING. CAN DELETE
                 ACK_packet = create_packet(sequence_number, ack_number, flagg, window, empty_data)
                 serverSocket.sendto(ACK_packet, client_addr)
-                print(f"Send ack {acknowledgment_number}")
                 last_ack_sent += 1 # confirm that packet has been sent
         except error:
             print("have problem with receiving data")
