@@ -5,6 +5,7 @@ import ipaddress
 import sys
 from PIL import Image
 import ping3
+import time
 
 
 # ------------------------------------------------------------------------------#
@@ -41,7 +42,7 @@ def parse_flags(flags): # get the values of syn, ack and fin
 # ------------------------------------------------------------------------------#
 
 # ------------------------------------------------------------------------------#
-#                                      BONUS                                    #
+#                                BONUS AND OTHER                                #
 # ------------------------------------------------------------------------------#
 
 def roundtriptime(bonus,IPaddress):
@@ -56,11 +57,22 @@ def roundtriptime(bonus,IPaddress):
         rtt=0.5
 
     return rtt
+
+def throughput(sizedata, totalduration):
+    size_bit= sizedata*8
+    size_Mb=size_bit/1000
+    
+    throughput=size_Mb/totalduration
+    throughput='{0:.2f}'.format(throughput)
+    print('--------------------------------------')
+    print(f'Throughput: {throughput} Mbps')
+    print('--------------------------------------')
+
     
     
 
 # ------------------------------------------------------------------------------#
-#                                   END OF BONUS                                #
+#                              END OF BONUS AND OTHER                           #
 # ------------------------------------------------------------------------------#
 
 # ------------------------------------------------------------------------------#
@@ -232,11 +244,12 @@ def GBN_server(filename, serverSocket, test):
     last_ack_sent = -1
 
     
-
+    starttime=time.time()
+    sizedata=0
     while True:
 
         packet, client_address = serverSocket.recvfrom(2048)
-                
+        sizedata+=len(packet)
         # Extracting the header
         header = packet[:12]
 
@@ -300,7 +313,12 @@ def GBN_server(filename, serverSocket, test):
             
             #sets test to false so packet number 5 does not get skipped. 
             
-
+    #Calculating the time
+    endtime = time.time()
+    totalduration=endtime-starttime
+    
+    #Sends to method that calcultates and prints througput
+    throughput(sizedata,totalduration)
 
     filename = join_file(data_list,filename)
     """   
@@ -323,7 +341,7 @@ def GBN_server(filename, serverSocket, test):
         print("Kan ikke åpne bildefilen")
         
 
-    # METHOD TO CLOSE CONNECTION?
+    
 
 
 
@@ -674,7 +692,6 @@ def SR_server(serverSocket, file_name, test):
                 total_received += len(data_from_msg) # TESTING. CAN DELETE
                 ACK_packet = create_packet(sequence_number, ack_number, flagg, window, empty_data)
                 serverSocket.sendto(ACK_packet, client_addr)
-                print(f"Send ack {acknowledgment_number}")
                 last_ack_sent += 1 # confirm that packet has been sent
         except error:
             print("have problem with receiving data")
