@@ -622,19 +622,18 @@ def SR_server(serverSocket, file_name, test):
             seq, ack, flags, win = parse_header(header)        
             # parse flags
             syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
+            print(f"receive packet with seq: {seq}")
 
             if fin_flagg == 2: # close signal from client
                 close_connection_server(serverSocket, client_addr)
                 break
 
-            elif seq == 100 and "dropack" in test: # DROP ACK TESTING
-                print("drop ack 100")
+            elif seq == 7 and "dropack" in test: # DROP ACK TESTING
+                print("drop ack 7\n\n")
                 test = "something else"
                 last_ack_sent += 1 # Skip to the next ACK message
             
             elif seq >= last_ack_sent + 1: # Rather than throwing away packets that arrive in the wrong order, still put the packets in the list
-                print(f"receive packet with seq: {seq}")
-
                 # send ack
                 sequence_number = 0
                 acknowledgment_number = seq
@@ -646,7 +645,7 @@ def SR_server(serverSocket, file_name, test):
                 serverSocket.sendto(ACK_packet, client_addr)
                 last_ack_sent += 1 # confirm that packet has been sent
 
-                
+                print(f"Send ack {acknowledgment_number}")
                 # add packet to list
                 data_list.append(data_from_msg)
                 seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
@@ -656,7 +655,7 @@ def SR_server(serverSocket, file_name, test):
             else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
                 # --> server has received packets 5 and 6 while 4 has not arrived yet
                 # --> put seq 4 in correct order
-                print(f"receive packet with seq: {seq}") # TESTING, CAN DELETE
+                #print(f"receive packet with seq: {seq}") # TESTING, CAN DELETE
                 data_list.insert(seq, data_from_msg) 
                 seq_list.insert(seq, seq) # TESTING, CAN DELETE
                 print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
@@ -670,6 +669,7 @@ def SR_server(serverSocket, file_name, test):
                 total_received += len(data_from_msg) # TESTING. CAN DELETE
                 ACK_packet = create_packet(sequence_number, ack_number, flagg, window, empty_data)
                 serverSocket.sendto(ACK_packet, client_addr)
+                print(f"Send ack {acknowledgment_number}")
                 last_ack_sent += 1 # confirm that packet has been sent
         except error:
             print("have problem with receiving data")
