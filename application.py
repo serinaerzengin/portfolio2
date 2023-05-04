@@ -375,7 +375,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
 
         #test - drop ack
         if sequence_id == 30 and "loss" in test:
-                print('\n\n Dropper pakke nr 30')
+                print('\n\n Dropper pakke nr 30\n\n')
                 sequence_id+=1
                 test = "something else"
                 
@@ -384,21 +384,23 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
         data = data_list[sequence_id]
         packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
         clientSocket.sendto(packet,serverAddr)
+        print('sent packet ', str(sequence_id))
 
         #timeout
         clientSocket.settimeout(rtt)
         try:    
-            #reveices packer from server
+            #reveices packet from server
             ack_from_server, serverAddr = clientSocket.recvfrom(2048)
 
             # parsing the header since the ack packet should be with no data
             seq, ack, flagg, win = parse_header(ack_from_server)
-            print('Fikk ack: '+str(ack))
+            
                 
             # Checks if the acknowledgement is for the right packet
             if  sequence_id == ack:
                 # parse flags
                 syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+                print('Fikk ack: '+str(ack))
 
                 # Check if it has ack flagg marked
                 if ack_flagg == 4:
@@ -407,7 +409,8 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
             else:
                 #if a packet is dropped, server sneds dupack, and we calculate which packet we send next.
                 sequence_id=ack+1
-                print('kom inn her')
+                print('\n\n received dupack: ', str(ack) , '\n\n')
+               
                 
        
        #if timeout, the sequence number should not be changed. We send packet
@@ -451,7 +454,7 @@ def SAW_Server(filename,serverSocket, test):
         if seq == (last_ack_number+1): 
             # extract the data from the header
             data = packet[12:]
-            print('The data came in the right order!')
+            print('Received packet nr: ', str(seq))
 
            
 
@@ -460,11 +463,11 @@ def SAW_Server(filename,serverSocket, test):
                 print('\n\nDroppet ack nr 13\n\n')
                 # set to false so that the skip only happens once.
                 test = "something else"
-                print('verdien til test settes til', test)
+                
             
             else:
                
-                 #Puts the data in the list
+                #Puts the data in the list
                 data_list.append(data)
                 ack_number=seq
                 flagg = 4 # sets the ack flag
@@ -473,6 +476,7 @@ def SAW_Server(filename,serverSocket, test):
                 serverSocket.sendto(ack_packet, client_address)
                 last_ack_number+=1
                 sequence_number+=1
+                print('Sent ack packet: ', str(ack_number))
 
         else:
             ack_number=last_ack_number
@@ -481,6 +485,7 @@ def SAW_Server(filename,serverSocket, test):
             #creates and send ACK-msg to server
             ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
             serverSocket.sendto(ack_packet, client_address)
+            
 
     filename = join_file(data_list,filename)
 
@@ -640,19 +645,18 @@ def SR_server(serverSocket, file_name, test):
             seq, ack, flags, win = parse_header(header)        
             # parse flags
             syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
+            print(f"receive packet with seq: {seq}")
 
             if fin_flagg == 2: # close signal from client
                 close_connection_server(serverSocket, client_addr)
                 break
 
-            elif seq == 100 and "dropack" in test: # DROP ACK TESTING
-                print("drop ack 100")
+            elif seq == 7 and "dropack" in test: # DROP ACK TESTING
+                print("drop ack 7\n\n")
                 test = "something else"
                 last_ack_sent += 1 # Skip to the next ACK message
             
             elif seq >= last_ack_sent + 1: # Rather than throwing away packets that arrive in the wrong order, still put the packets in the list
-                print(f"receive packet with seq: {seq}")
-
                 # send ack
                 sequence_number = 0
                 acknowledgment_number = seq
@@ -664,7 +668,7 @@ def SR_server(serverSocket, file_name, test):
                 serverSocket.sendto(ACK_packet, client_addr)
                 last_ack_sent += 1 # confirm that packet has been sent
 
-                
+                print(f"Send ack {acknowledgment_number}")
                 # add packet to list
                 data_list.append(data_from_msg)
                 seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
@@ -674,7 +678,7 @@ def SR_server(serverSocket, file_name, test):
             else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
                 # --> server has received packets 5 and 6 while 4 has not arrived yet
                 # --> put seq 4 in correct order
-                print(f"receive packet with seq: {seq}") # TESTING, CAN DELETE
+                #print(f"receive packet with seq: {seq}") # TESTING, CAN DELETE
                 data_list.insert(seq, data_from_msg) 
                 seq_list.insert(seq, seq) # TESTING, CAN DELETE
                 print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
