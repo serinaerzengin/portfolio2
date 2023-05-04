@@ -290,7 +290,7 @@ def GBN_server(filename, serverSocket, test):
             last_packet_added+=1
 
          # If at packet nr. 13, we skip sending the ack (the ack got lost).
-        if seq == 13 and "dropack" in test:
+        if seq == 13 and "skipack" in test:
             print('\n\nDroppet ack nr 13\n\n')
             
             # set to false so that the skip only happens once.
@@ -472,7 +472,7 @@ def SAW_Server(filename,serverSocket, test):
            
 
             # If at packet nr. 13, we skip sending the ack (the ack got lost).
-            if seq == 13 and "dropack" in test:
+            if seq == 13 and "skipack" in test:
                 print('\n\nDroppet ack nr 13\n\n')
                 # set to false so that the skip only happens once.
                 test = "something else"
@@ -617,7 +617,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
                     flagg = 0
                     my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
                     clientSocket.sendto(my_packet, server_Addr)
-                    print(f"resend packet {sequence_number} because of unACKed in window") # print out info
+                    print(f"\n\nresend packet {sequence_number} because of unACKed in window") # print out info
                     total_sent += len(data) # TESTING CAN DELETE
                     # while True: brukes naar man mister mange pakker?
 
@@ -679,7 +679,7 @@ def SR_server(serverSocket, file_name, test):
                 close_connection_server(serverSocket, client_addr)
                 break
 
-            elif seq == 7 and "dropack" in test: # DROP ACK TESTING
+            elif seq == 7 and "skipack" in test: # DROP ACK TESTING
                 print("drop ack 7\n\n")
                 test = "something else"
                 last_ack_sent += 1 # Skip to the next ACK message
@@ -978,7 +978,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
-parser.add_argument('-t','--test', type=str, default="", help='use this flag to run the program test mode. On client: loss - On server: dropack')
+parser.add_argument('-t','--test', type=str, default="", help='use this flag to run the program test mode. On client: loss - On server: skipack')
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 

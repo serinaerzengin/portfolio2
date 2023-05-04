@@ -11,7 +11,7 @@ This application is a simple transport protocol that provides reliable data deli
 `-b` or `--bind` = Allows to select **ip address** of the server's interface. \
 `-p` or `--port` = Allows to select **port number** (Range: [1024-65535]).\
 `-r` or `--modus` =  Allows to choose the **reliable method** (SAW, GBN, SR).\
-`-t` or `--test` =  Allows to choose the **test mode** (dropack).
+`-t` or `--test` =  Allows to choose the **test mode** (skipack).
 
 <br />
 
@@ -34,7 +34,7 @@ This application is a simple transport protocol that provides reliable data deli
 
 1. `server`
 ```
-python3 application.py -s -b 127.0.0.1 -p 8088 -r SAW -t dropack -f blabla.JPG
+python3 application.py -s -b 127.0.0.1 -p 8088 -r SAW -t skipack -f blabla.JPG
 ```
 
 2. `client`
@@ -48,7 +48,7 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r SAW -t loss -f hei.JPG
 
 1. `server`
 ```
-python3 application.py -s -b 127.0.0.1 -p 8088 -r GBN -t dropack -f blabla.JPG
+python3 application.py -s -b 127.0.0.1 -p 8088 -r GBN -t skipack -f blabla.JPG
 ```
 
 2. `client`
@@ -62,7 +62,7 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r GBN -w 10 -t loss -f hei.JPG
 
 1. `server`
 ```
-python3 application.py -s -b 127.0.0.1 -p 8088 -r SR -t dropack -f blabla.JPG
+python3 application.py -s -b 127.0.0.1 -p 8088 -r SR -t skipack -f blabla.JPG
 ```
 
 2. `client`
