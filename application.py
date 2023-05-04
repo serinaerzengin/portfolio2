@@ -47,7 +47,7 @@ def parse_flags(flags): # get the values of syn, ack and fin
 def roundtriptime(bonus,IPaddress):
     if bonus:
         rtt = ping3.ping(IPaddress)
-        
+        rtt = rtt*4
         if rtt is None:
             print(f"Failed to get round trip time from {IPaddress}")
             rtt = 0.5
