@@ -64,7 +64,8 @@ def throughput(sizedata, totalduration):
     
     throughput=size_Mb/totalduration
     throughput='{0:.2f}'.format(throughput)
-    print('--------------------------------------')
+    
+    print('\n--------------------------------------')
     print(f'Throughput: {throughput} Mbps')
     print('--------------------------------------')
 
@@ -244,12 +245,16 @@ def GBN_server(filename, serverSocket, test):
     last_ack_sent = -1
 
     
-    starttime=time.time()
-    sizedata=0
+    #adding the size of the packet to the total data
+    sizedata+=len(packet)
+
     while True:
 
         packet, client_address = serverSocket.recvfrom(2048)
+
+        #adding the size of the packet to the total data
         sizedata+=len(packet)
+        
         # Extracting the header
         header = packet[:12]
 
@@ -431,10 +436,18 @@ def SAW_Server(filename,serverSocket, test):
     flagg = 0
     last_ack_number = -1
 
+    #Marking start time
+    starttime=time.time()
+
+    #varibale for amount data received
+    sizedata=0
+
     while True:
         #waits for packets
         packet, client_address = serverSocket.recvfrom(2048)
         
+        #adding the size of the packet to the total data
+        sizedata+=len(packet)
 
         # Extracting the header
         header = packet[:12]
@@ -485,7 +498,13 @@ def SAW_Server(filename,serverSocket, test):
             #creates and send ACK-msg to server
             ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
             serverSocket.sendto(ack_packet, client_address)
-            
+    
+    #Calculating the time
+    endtime = time.time()
+    totalduration=endtime-starttime
+    
+    #Sends to method that calcultates and prints througput
+    throughput(sizedata,totalduration)
 
     filename = join_file(data_list,filename)
 
@@ -630,11 +649,20 @@ def SR_server(serverSocket, file_name, test):
     last_ack_sent = -1
     seq_list = [] #TESTING, CAN DELETE
     
+    #Marking start time
+    starttime=time.time()
+
+    #varibale for amount data received
+    sizedata=0
+
     while True:
         # get data packet from client
         try:
             packet, client_addr = serverSocket.recvfrom(2048)
-            
+
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
+
             # extract header
             header = packet[:12]
 
@@ -695,6 +723,14 @@ def SR_server(serverSocket, file_name, test):
                 last_ack_sent += 1 # confirm that packet has been sent
         except error:
             print("have problem with receiving data")
+
+    #Calculating the time
+    endtime = time.time()
+    totalduration=endtime-starttime
+    
+    #Sends to method that calcultates and prints througput
+    throughput(sizedata,totalduration)
+
     myfile = join_file(data_list, file_name)
     img = Image.open(myfile)
     img.show()
