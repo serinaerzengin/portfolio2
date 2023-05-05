@@ -231,9 +231,11 @@ def GBN_server(filename, serverSocket, test):
     last_packet_added = -1
     last_ack_sent = -1
 
-    
-    #adding the size of the packet to the total data
-    sizedata+=len(packet)
+    #Marking start time
+    starttime=time.time()
+
+    #varibale for amount data received
+    sizedata=0
 
     while True:
 
