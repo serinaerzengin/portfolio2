@@ -77,8 +77,19 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r SR -w 10 -t loss -f hei.JPG
 
 
 ## Install
+To be able to run out application.py you need to have the following installed:
+- Pillow
+- ping3
 
-For å skrive ut bilde: python3 -m pip install Pillow  
-sudo python3 -m pip install ping3
-import i toppen: from PIL import Image
-tok et par sekunder fra det ble lasta ned til den import linja begynte å funke (ikke lyse rødt)
+#### Install Pillow
+Pillow is installed to be able to open a image. \
+After installing Pillow, we imort Image from PIL, wich makes it possible to open a Image file \
+`python3 -m pip install Pillow`
+
+
+#### Install ping3
+Ping3 is Imported into the project so that the roundtrip time can be calculated.\
+If you run the client side and add the flag -B, then the application will use the ping command from ping 3 to calucate the roundtrip time, and use rtt*4 as the socket timeout. If you dont use -B, the timeout will be set to default 0.5ms. \
+`sudo python3 -m pip install ping3`
+
+

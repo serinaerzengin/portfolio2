@@ -217,7 +217,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 next_to_send=base
     
     close_connection_client(clientSocket, server_Address)
-        
+
 
 
 
@@ -527,8 +527,6 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     # data list from file
     raw_datalist = file_splitting(file_sent) # array contains raw data
 
-    total_sent = 0 # testing CAN DELETE
-
     formatted_packets_list = []
 
     for i in range(len(raw_datalist)): # create a new list containing different packets
@@ -540,67 +538,62 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
 
 
     WINDOW_SIZE = window_size # window size
-    first_in_wd = 0 # base a.k.a "first" packet in window
-    next_in_wd = 0 # next packet in window
-    base = 0 # keep track of window
+    base = 0 # base a.k.a "first" packet in window
+    next_to_send = 0 # next packet in window
+
     clientSocket.settimeout(rtt)
-    # loop through data list and send packets within WINDOW_SIZE
-    while first_in_wd < len(raw_datalist):
-        # send packets in window size
-        print("\n\n")
-        for packet in formatted_packets_list[first_in_wd:first_in_wd+WINDOW_SIZE]: # extract a slice of the data_list. F.eks if base = 0 --> extract packet 0,1,2,3,4
+
+    # loop through data list 
+    while base < len(raw_datalist):
+        
+        # and send packets within WINDOW_SIZE
+        while next_to_send < base + WINDOW_SIZE and next_to_send < len(formatted_packets_list): 
             
-            if "loss" in test and packet["seq_num"] == 8: # drop packet test
-                next_in_wd += 1
-                print("drop pakke 8")
+            if "loss" in test and next_to_send == 3: # drop packet test
+                next_to_send += 1
+                print("drop pakke 3")
                 test = "something else"
                 
             # send all packets in this window
-            if packet["seq_num"] >= next_in_wd: 
+            else:
                 # create packet
-                data = packet["data"]
-                sequence_number = packet["seq_num"]
+                data = formatted_packets_list[next_to_send]["data"]
+                sequence_number = formatted_packets_list[next_to_send]["seq_num"]
                 acknowledgement_number = 0
                 window = 0
                 flagg = 0
                 my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
                 
-                
-
-                # should have a try catch here to handle packet loss
-                clientSocket.sendto(my_packet, server_Addr)
+                clientSocket.sendto(my_packet, server_Addr) # send packet here
                 print(f"sent packet {sequence_number}")
-                total_sent += len(data) # TESTING CAN DELETE
-                next_in_wd += 1 # move to the next packet in window
+                next_to_send += 1 # move to the next packet in window after sending
         # done sending all packets in that specific window
         
-        # wait for ACKs from all packets that has been sent
+        # wait for ACKs packets that has been sent
         try:
             print("\n\n")
-            while True:                
-                ack_from_server, server_address = clientSocket.recvfrom(2048)
-
-                # parsing header
-                seq, ack, flags, win = parse_header(ack_from_server)
-                print(f"receive ack {ack} from server")
-
-                for packet in formatted_packets_list: # go through all packets in list
-                    if packet["seq_num"] == ack: # if packet has received its own ACK
-                        syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
-                        
-                        # check if this is ACK flagg
-                        if ack_flagg == 4:    
-                            packet["acked"] = True # mark packets as ACKed            
-                            break # continue to check other packets
-                
-                # after marking all packets that has been ACKed
-                # we will update first_in_window to last ACKed packet
-                while first_in_wd < len(formatted_packets_list) and formatted_packets_list[first_in_wd]["acked"]:
-                    first_in_wd += 1 
+            ack_from_server, server_address = clientSocket.recvfrom(2048)
+            
+            # parsing header
+            seq, ack, flags, win = parse_header(ack_from_server)
+            print(f"receive ack {ack} from server")
+            for packet in formatted_packets_list: # go through all packets in list
+                if packet["seq_num"] == ack: # if packet has received its own ACK
+                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
+                    
+                    # check if this is ACK flagg
+                    if ack_flagg == 4:    
+                        packet["acked"] = True # mark packets as ACKed 
+                        break # continue to check other packets 
+            
+            # After marking ACKed for packets, we update the base of window to next value
+            while base < len(formatted_packets_list) and formatted_packets_list[base]["acked"]:
+                base += 1
+               
 
         except timeout: # resend unACKed packets in window
-            for packet in formatted_packets_list[base:base+WINDOW_SIZE]: # go through and handle the same list using base!!!
-                if packet["seq_num"] < next_in_wd and not packet["acked"]: # resend packet that has not been ACKed
+            for packet in formatted_packets_list[base:base+WINDOW_SIZE]: # Go through the slice of list where from the index of base --> base + WINDOW_SIZE
+                if packet["seq_num"] < next_to_send and not packet["acked"]: # resend packets that have not been ACKed
                     
                     # create packet
                     data = packet["data"]
@@ -610,28 +603,27 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
                     flagg = 0
                     my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
                     clientSocket.sendto(my_packet, server_Addr)
-                    print(f"\n\nresend packet {sequence_number} because of unACKed in window") # print out info
-                    total_sent += len(data) # TESTING CAN DELETE
-                    # while True: brukes naar man mister mange pakker?
+                    print(f"\nresend packet {sequence_number} because of unACKed in window") # print out info
+                    
 
                     # ------------------------------------------------------------------------------------------------------------#
 
                     # After sending, we have to wait to get ACK message from the newly sent packet before moving to the next window              
                     ack_from_server, server_address = clientSocket.recvfrom(2048)
+
                     # parsing header
                     seq, ack, flags, win = parse_header(ack_from_server)
                     print(f"receive ack {ack} from server")
                     for packet in formatted_packets_list: # go through all packets in list
                         if packet["seq_num"] == ack: # if packet has received its own ACK
                             syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
+
                             # check if this is ACK flagg
                             if ack_flagg == 4:    
-                                packet["acked"] = True # mark packets as ACKed            
+                                packet["acked"] = True # mark packets as ACKed
+                                base += 1 # update base to the newest value since it has ignored the lost packet            
                                 break # continue to check other packets
-                    while first_in_wd < len(formatted_packets_list) and formatted_packets_list[first_in_wd]["acked"]:
-                        first_in_wd += 1 # update first in window since it has ignored the lost packet
-            base = first_in_wd # update base to the next new window
-    
+        
     close_connection_client(clientSocket, server_Addr)
 
 
@@ -666,54 +658,55 @@ def SR_server(serverSocket, file_name, test):
             seq, ack, flags, win = parse_header(header)        
             # parse flags
             syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
-            print(f"receive packet with seq: {seq}")
+            
 
             if fin_flagg == 2: # close signal from client
                 close_connection_server(serverSocket, client_addr)
                 break
+            else: # if not closing signal
+                print(f"receive packet with seq: {seq}")
+                if seq == 7 and "skipack" in test: # DROP ACK TESTING
+                    print("drop ack 7\n\n")
+                    test = "something else"
+                    last_ack_sent += 1 # Skip to the next ACK message
 
-            elif seq == 7 and "skipack" in test: # DROP ACK TESTING
-                print("drop ack 7\n\n")
-                test = "something else"
-                last_ack_sent += 1 # Skip to the next ACK message
-            
-            elif seq >= last_ack_sent + 1: # Rather than throwing away packets that arrive in the wrong order, still put the packets in the list
-                # send ack
-                sequence_number = 0
-                acknowledgment_number = seq
-                window = 64000
-                flagg = 4
-                total_received += len(data_from_msg) # TESTING. CAN DELETE
-                
-                ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, empty_data)
-                serverSocket.sendto(ACK_packet, client_addr)
-                last_ack_sent += 1 # confirm that packet has been sent
+                elif seq >= last_ack_sent + 1: # Rather than throwing away packets that arrive in the wrong order, still put the packets in the list
+                    # send ack
+                    sequence_number = 0
+                    acknowledgment_number = seq
+                    window = 64000
+                    flagg = 4
+                    total_received += len(data_from_msg) # TESTING. CAN DELETE
 
-                print(f"Send ack {acknowledgment_number}")
-                # add packet to list
-                data_list.append(data_from_msg)
-                seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
+                    ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, empty_data)
+                    serverSocket.sendto(ACK_packet, client_addr)
+                    last_ack_sent += 1 # confirm that packet has been sent
 
-                print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
-                print("\n\n") # TESTING, CAN DELETE
-            else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
-                # --> server has received packets 5 and 6 while 4 has not arrived yet
-                # --> put seq 4 in correct order
-                #print(f"receive packet with seq: {seq}") # TESTING, CAN DELETE
-                data_list.insert(seq, data_from_msg) 
-                seq_list.insert(seq, seq) # TESTING, CAN DELETE
-                print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
-                print("\n\n") # TESTING, CAN DELETE
+                    print(f"Send ack {acknowledgment_number}")
+                    # add packet to list
+                    data_list.append(data_from_msg)
+                    seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
 
-                # return ACK of that missing packet to client
-                sequence_number = 0
-                ack_number = seq
-                window = 64000
-                flagg = 4
-                total_received += len(data_from_msg) # TESTING. CAN DELETE
-                ACK_packet = create_packet(sequence_number, ack_number, flagg, window, empty_data)
-                serverSocket.sendto(ACK_packet, client_addr)
-                last_ack_sent += 1 # confirm that packet has been sent
+                    print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
+                    print("\n\n") # TESTING, CAN DELETE
+                else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
+                    # --> server has received packets 5 and 6 while 4 has not arrived yet
+                    # --> put seq 4 in correct order
+                    #print(f"receive packet with seq: {seq}") # TESTING, CAN DELETE
+                    data_list.insert(seq, data_from_msg) 
+                    seq_list.insert(seq, seq) # TESTING, CAN DELETE
+                    print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
+                    print("\n\n") # TESTING, CAN DELETE
+
+                    # return ACK of that missing packet to client
+                    sequence_number = 0
+                    ack_number = seq
+                    window = 64000
+                    flagg = 4
+                    total_received += len(data_from_msg) # TESTING. CAN DELETE
+                    ACK_packet = create_packet(sequence_number, ack_number, flagg, window, empty_data)
+                    serverSocket.sendto(ACK_packet, client_addr)
+                    last_ack_sent += 1 # confirm that packet has been sent
         except error:
             print("have problem with receiving data")
 
