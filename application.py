@@ -96,6 +96,11 @@ def join_file(list, filename):
             f.write(part)
     return filename
 
+
+class One_Packet:
+    def __init__(self,seq, data):
+        self.seq = seq
+        self.data = data
 # ------------------------------------------------------------------------------#
 #                            Done handle file                                   #
 # ------------------------------------------------------------------------------#
@@ -417,6 +422,9 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
             print("Error: Timeout")
                 
     close_connection_client(clientSocket, serverAddr)
+   
+
+
 
 def SAW_Server(filename,serverSocket, test):
     #list with the data
@@ -628,6 +636,151 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
 
 
 def SR_server(serverSocket, file_name, test):
+    #list with the data and buffer
+    data_list = [] 
+    buffer = []
+    seq_list = []
+
+
+    #For sending ack packet
+    emptydata=b''
+    sequence_number = 0
+    ack_number = 0
+    window = 0
+    flagg = 0
+    
+
+    #Marking start time
+    starttime=time.time()
+
+    #varibale for amount data received
+    sizedata=0
+
+    #helping variable
+    next_expected_seq = 0
+    last_packet_added = -1
+    last_ack_number = -1
+
+    while True:
+        packet, client_address = serverSocket.recvfrom(2048)
+
+        #adding the size of the packet to the total data
+        sizedata+=len(packet)
+
+        # extract the data from the header
+        data = packet[12:]
+        
+        # Extracting the header
+        header = packet[:12]
+
+        # parsing the header
+        seq, ack, flagg, win = parse_header(header)
+        print('\nReceived a packet with seq: '+str(seq))
+
+        #parsing the flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+        # check if this is a fin message
+        if fin_flagg == 2:
+            #If fin packet connection will be closed
+            close_connection_server(serverSocket, client_address)
+            break
+        
+        #If its the packet in the right order -> add to main list
+        if seq == last_packet_added+1:
+            data_list.append(data)
+            print(f'Packet {seq} added to the list')
+            last_packet_added+=1
+
+            seq_list.append(seq)
+
+            # Arguments in ack packet.
+            ack_number = seq
+            flagg = 4 # sets the ack flag
+
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+            sequence_number+=1
+            next_expected_seq+=1
+
+            print(f'Sent ack {ack_number}')
+
+            #If buffer has packets in it
+            
+            if len(buffer) > 0:
+                
+                #Loops through all elements in buffer
+                i=0
+                while i < len(buffer):
+                    p = buffer[i]
+                    print(f'{p.seq} == {last_packet_added+1} ?')
+                    #If the packet is the next in main list, its added
+                    
+                    if p.seq == last_packet_added+1:
+                        buffer.remove(p)
+                        data_list.append(p.data)
+                        seq_list.append(p.seq)
+                        print(f'Packet {p.seq} added to the list')
+                        last_packet_added+=1
+                    else:
+                        i+=1
+                    print(f'Buffer has {len(buffer)} elements')
+            print(f"Current seq list: {seq_list}")
+                    
+            
+
+            
+                    
+
+            
+        #If out of order -> add to buffer
+        elif seq > next_expected_seq:
+
+            pack=One_Packet(seq,data)
+            buffer.append(pack)
+
+
+            print(f'Packet {seq} added to the buffer')
+            
+            # Arguments in ack packet.
+            ack_number = seq
+            flagg = 4 # sets the ack flag
+
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+            sequence_number+=1
+            
+            print(f'Sent ack {ack_number}')
+
+
+        #If the packet already has been added to the 
+        elif seq < last_packet_added:
+            
+            # Arguments in ack packet.
+            ack_number = seq
+            flagg = 4 # sets the ack flag
+
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+            sequence_number+=1
+            
+            print(f'Sent ack {ack_number}')
+
+    #Calculating the time
+    endtime = time.time()
+    totalduration=endtime-starttime
+    
+    #Sends to method that calcultates and prints througput
+    throughput(sizedata,totalduration)
+
+
+
+     
+
+def SR_server_Old(serverSocket, file_name, test):
     data_list = []
     empty_data = b''
     total_received = 0
