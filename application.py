@@ -523,8 +523,6 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     # data list from file
     raw_datalist = file_splitting(file_sent) # array contains raw data
 
-    total_sent = 0 # testing CAN DELETE
-
     formatted_packets_list = []
 
     for i in range(len(raw_datalist)): # create a new list containing different packets
@@ -544,7 +542,6 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     # loop through data list 
     while base < len(raw_datalist):
         
-        #print("\n\n")
         # and send packets within WINDOW_SIZE
         while next_to_send < base + WINDOW_SIZE and next_to_send < len(formatted_packets_list): 
             
@@ -565,7 +562,6 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
                 
                 clientSocket.sendto(my_packet, server_Addr) # send packet here
                 print(f"sent packet {sequence_number}")
-                total_sent += len(data) # TESTING CAN DELETE
                 next_to_send += 1 # move to the next packet in window after sending
         # done sending all packets in that specific window
         
@@ -583,8 +579,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
                     
                     # check if this is ACK flagg
                     if ack_flagg == 4:    
-                        packet["acked"] = True # mark packets as ACKed
-                        #base += 1  # we update base to last ACKed packet         
+                        packet["acked"] = True # mark packets as ACKed 
                         break # continue to check other packets 
             
             # After marking ACKed for packets, we update the base of window to next value
@@ -593,7 +588,6 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
                
 
         except timeout: # resend unACKed packets in window
-            print("im here in timeout")
             for packet in formatted_packets_list[base:base+WINDOW_SIZE]: # Go through the slice of list where from the index of base --> base + WINDOW_SIZE
                 if packet["seq_num"] < next_to_send and not packet["acked"]: # resend packets that have not been ACKed
                     
@@ -606,7 +600,6 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
                     my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
                     clientSocket.sendto(my_packet, server_Addr)
                     print(f"\nresend packet {sequence_number} because of unACKed in window") # print out info
-                    total_sent += len(data) # TESTING CAN DELETE
                     
 
                     # ------------------------------------------------------------------------------------------------------------#
