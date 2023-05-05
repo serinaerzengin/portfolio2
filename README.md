@@ -83,13 +83,13 @@ To be able to run out application.py you need to have the following installed:
 
 #### Install Pillow
 Pillow is installed to be able to open a image. \
-After installing Pillow, we imort Image from PIL, wich makes it possible to open a Image file \ \
+After installing Pillow, we imort Image from PIL, wich makes it possible to open a Image file \
 `python3 -m pip install Pillow`
 
 
 #### Install ping3
 Ping3 is Imported into the project so that the roundtrip time can be calculated.\
-If you run the client side and add the flag -B, then the application will use the ping command from ping 3 to calucate the roundtrip time, and use rtt*4 as the socket timeout. If you dont use -B the timeout will be set to default 0.5ms. \ \
+If you run the client side and add the flag -B, then the application will use the ping command from ping 3 to calucate the roundtrip time, and use rtt*4 as the socket timeout. If you dont use -B, the timeout will be set to default 0.5ms. \
 `sudo python3 -m pip install ping3`
 
 
