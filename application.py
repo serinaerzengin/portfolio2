@@ -44,6 +44,16 @@ def parse_flags(flags): # get the values of syn, ack and fin
 # ------------------------------------------------------------------------------#
 #                                BONUS AND OTHER                                #
 # ------------------------------------------------------------------------------#
+#133590 GBN Server 
+#133578 GBN Client
+
+#133578 SR Server
+#133566 SR Client
+
+#133590 SAW Server
+
+#157 218  GBN
+#175 556 SR 189 407
 
 def roundtriptime(bonus,IPaddress):
     if bonus:
@@ -69,6 +79,8 @@ def throughput(sizedata, totalduration):
     print(f'Throughput: {throughput} Mbps')
     print('--------------------------------------')
 
+    print(f'size of data: {sizedata}')
+
     
     
 
@@ -85,9 +97,10 @@ def file_splitting(file_sent):
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
-            list.append(data) # add to an array
             if not data: # break if there is no more data
                 break
+            else:
+                list.append(data) # add to an array
     return list
 
 def join_file(list, filename):
@@ -159,12 +172,13 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
 
     base = 0 #First i window and last ack to be recevied
     next_to_send = 0
-    print('Lengden av data listen: '+str(len(data_list)))
+    
     
     data = data_list[base]
     seq_number = next_to_send
     acknowledgement_number = 0
     flags = 0
+    datasize=0
 
     while base < len(data_list): #MÅ HA NOE ANNET ENN TRUE?
 
@@ -190,6 +204,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 clientSocket.sendto(packet,server_Address) 
                 print(f'Sendt seq: {seq_number}')
 
+                datasize+=len(packet)
                 #Updates next packet to send, and seq number
                 next_to_send+=1
 
@@ -221,6 +236,8 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
                 next_to_send=base
     
+    print('Lengden av data listen: '+str(len(data_list)))
+    print('Lengden av datafilen: ',datasize)
     close_connection_client(clientSocket, server_Address)
 
 
@@ -537,27 +554,30 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
 
     base = 0 #First i window and last ack to be recevied
     next_to_send = 0
-    print('Lengden av data listen: '+str(len(data_list)))
+    
     
     packets_sent = [] #Contians the packets in window which has been send and acked.
     seq_number = next_to_send
     acknowledgement_number = 0
     flags = 0
 
+    datasize=0
+
 
         # Loop to send packets to the server
-    while True:
+    while next_to_send<len(data_list):
         # Fill the sliding window with packets up to the window size
-        while next_to_send < base + window_size and len(packets_sent) < window_size:
+        while next_to_send < base + window_size and len(packets_sent) < window_size and next_to_send<len(data_list):
+            print('Next to send: ',next_to_send)
             data=data_list[next_to_send]
-            if not data:
-                # No more data to send
-                break
+            
 
             #Creating and sending data
             packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data) 
             clientSocket.sendto(packet,server_Address) 
-            print(f'Sendt seq: {seq_number}')
+            print(f'Sendt seq: {seq_number} av {len(data_list)}')
+
+            datasize+=len(packet)
 
             #Updating the list of sent packets in winodw, and next seq number
             packets_sent.append(packet)
@@ -599,9 +619,10 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
                     clientSocket.sendto(pack,server_Address) 
                     print(f'Resent seq: {base+i} beacuse of UNacked.')
 
-            
-
+    print('Lengden av data listen: '+str(len(data_list)))        
+    print('Lengden av datafilen: ',datasize)
     close_connection_client(clientSocket, server_Address)
+    
             
 
 
@@ -724,8 +745,7 @@ def SR_server(serverSocket, file_name, test):
     flagg = 0
     
 
-    #Marking start time
-    starttime=time.time()
+    
 
     #varibale for amount data received
     sizedata=0
@@ -735,6 +755,8 @@ def SR_server(serverSocket, file_name, test):
     last_packet_added = -1
     last_ack_number = -1
 
+    #Marking start time
+    starttime=time.time()
     while True:
         packet, client_address = serverSocket.recvfrom(2048)
 
@@ -851,6 +873,7 @@ def SR_server(serverSocket, file_name, test):
     throughput(sizedata,totalduration)
 
     filename = join_file(data_list,file_name)
+    
 
     try:
         # Open picture
