@@ -288,8 +288,8 @@ def GBN_server(filename, serverSocket, test):
         else:
             print(f"Throws packet {seq} away")
         
-        if seq == 13 and "skipack" in test:
-            print('\n\nDroppet ack nr 13\n\n')
+        if seq == 21 and "skipack" in test:
+            print('\n\nDroppet ack nr 21\n\n')
             
             # set to false so that the skip only happens once.
             test = "something else"
@@ -531,7 +531,81 @@ def SAW_Server(filename,serverSocket, test):
 #                                   SR                                          #
 # ------------------------------------------------------------------------------#
  
-def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
+
+def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
+    data_list = file_splitting(filename)
+
+    base = 0 #First i window and last ack to be recevied
+    next_to_send = 0
+    print('Lengden av data listen: '+str(len(data_list)))
+    
+    packets_sent = [] #Contians the packets in window which has been send and acked.
+    seq_number = next_to_send
+    acknowledgement_number = 0
+    flags = 0
+
+
+        # Loop to send packets to the server
+    while True:
+        # Fill the sliding window with packets up to the window size
+        while next_to_send < base + window_size and len(packets_sent) < window_size:
+            data=data_list[next_to_send]
+            if not data:
+                # No more data to send
+                break
+
+            #Creating and sending data
+            packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data) 
+            clientSocket.sendto(packet,server_Address) 
+            print(f'Sendt seq: {seq_number}')
+
+            #Updating the list of sent packets in winodw, and next seq number
+            packets_sent.append(packet)
+            next_to_send+=1
+            seq_number+=1
+        
+        #setting timeout
+        clientSocket.settimeout(rtt)
+
+    
+        try:
+            #reveices ack from server
+            ack_from_server, serverAddr = clientSocket.recvfrom(2048)
+            
+            # parsing the header since the ack packet should be with no data
+            seq, ack, flagg, win = parse_header(ack_from_server)
+
+            if ack >= base and ack < base + window_size:
+                print('Received ACK for packet:', ack)
+                packets_sent[ack - base] = None
+                if ack == base:
+                    # Advance the sliding window and remove the ACKed packets from the packets list
+                    while packets_sent and packets_sent[0] is None:
+                        packets_sent.pop(0)
+                        base += 1
+            if not packets_sent and base==len(data_list)-1:
+                # All packets have been ACKed, so exit the loop
+                break
+
+        
+        except timeout:
+            # Handle a timeout by resending the unACKed packets in the sliding window
+            print('Timeout: resending packets from windowsize, starting with: ',base)
+
+            
+            for i in range(len(packets_sent)):
+                pack=packets_sent[i]
+                if pack is not None:
+                    clientSocket.sendto(pack,server_Address) 
+                    print(f'Resent seq: {base+i} beacuse of UNacked.')
+
+            
+
+    close_connection_client(clientSocket, server_Address)
+            
+
+
+def SR_client_old(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     # data list from file
     raw_datalist = file_splitting(file_sent) # array contains raw data
 
@@ -686,8 +760,13 @@ def SR_server(serverSocket, file_name, test):
             close_connection_server(serverSocket, client_address)
             break
         
+        elif seq == 40 and "skipack" in test:
+            print("-----------DROP ACK 40-------------\n\n")
+            test = "something else"
+            
+
         #If its the packet in the right order -> add to main list
-        if seq == last_packet_added+1:
+        elif seq == last_packet_added+1:
             data_list.append(data)
             print(f'Packet {seq} added to the list')
             last_packet_added+=1
@@ -704,6 +783,7 @@ def SR_server(serverSocket, file_name, test):
             sequence_number+=1
             next_expected_seq+=1
 
+
             print(f'Sent ack {ack_number}')
 
             #If buffer has packets in it
@@ -714,9 +794,7 @@ def SR_server(serverSocket, file_name, test):
                 i=0
                 while i < len(buffer):
                     p = buffer[i]
-                    print(f'{p.seq} == {last_packet_added+1} ?')
                     #If the packet is the next in main list, its added
-                    
                     if p.seq == last_packet_added+1:
                         buffer.remove(p)
                         data_list.append(p.data)
@@ -726,13 +804,9 @@ def SR_server(serverSocket, file_name, test):
                     else:
                         i+=1
                     print(f'Buffer has {len(buffer)} elements')
-            print(f"Current seq list: {seq_list}")
+            #print(f"Current seq list: {seq_list}")
                     
             
-
-            
-                    
-
             
         #If out of order -> add to buffer
         elif seq > next_expected_seq:
@@ -775,6 +849,18 @@ def SR_server(serverSocket, file_name, test):
     
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
+
+    filename = join_file(data_list,file_name)
+
+    try:
+        # Open picture
+        img = Image.open(filename)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
 
 
 
