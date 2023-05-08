@@ -85,9 +85,10 @@ def file_splitting(file_sent):
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
-            list.append(data) # add to an array
             if not data: # break if there is no more data
                 break
+            else:
+                list.append(data) # add to an array
     return list
 
 def join_file(list, filename):
