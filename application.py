@@ -71,6 +71,11 @@ def throughput(sizedata, totalduration):
 
     print(f'size of data: {sizedata}')
 
+class One_Packet:
+    def __init__(self,seq, data):
+        self.seq = seq
+        self.data = data
+
     
     
 
@@ -639,91 +644,144 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
 
 
 def SR_server(serverSocket, file_name, test):
-    data_list = []
-    empty_data = b''
-    total_received = 0
-    last_ack_sent = -1
-    seq_list = [] #TESTING, CAN DELETE
+    #list with the data and buffer
+    data_list = [] 
+    buffer = []
+    seq_list = []
+
+
+    #For sending ack packet
+    emptydata=b''
+    sequence_number = 0
+    ack_number = 0
+    window = 0
+    flagg = 0
     
-    #Marking start time
-    starttime=time.time()
+
+    
 
     #varibale for amount data received
     sizedata=0
 
+    #helping variable
+    next_expected_seq = 0
+    last_packet_added = -1
+    last_ack_number = -1
+
+    #Marking start time
+    starttime=time.time()
     while True:
-        # get data packet from client
-        try:
-            packet, client_addr = serverSocket.recvfrom(2048)
+        packet, client_address = serverSocket.recvfrom(2048)
 
+        # extract the data from the header
+        data = packet[12:]
+        
+        # Extracting the header
+        header = packet[:12]
 
-            # extract header
-            header = packet[:12]
+        # parsing the header
+        seq, ack, flagg, win = parse_header(header)
+        print('\nReceived a packet with seq: '+str(seq))
 
-            # extract data
-            data_from_msg = packet[12:]
+        #parsing the flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
 
-            # parsing header
-            seq, ack, flags, win = parse_header(header)        
-            # parse flags
-            syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
+        # check if this is a fin message
+        if fin_flagg == 2:
+            #If fin packet connection will be closed
+            close_connection_server(serverSocket, client_address)
+            break
+        
+        elif seq == 40 and "skipack" in test:
+            print("-----------DROP ACK 40-------------\n\n")
+            test = "something else"
             
 
-            if fin_flagg == 2: # close signal from client
-                close_connection_server(serverSocket, client_addr)
-                break
-            else: # if not closing signal
-                print(f"receive packet with seq: {seq}")
-                if seq == 40 and "skipack" in test: # DROP ACK TESTING
-                    print("drop ack 40\n\n")
-                    test = "something else"
-                    last_ack_sent += 1 # Skip to the next ACK message
+        #If its the packet in the right order -> add to main list
+        elif seq == last_packet_added+1:
+            data_list.append(data)
+            print(f'Packet {seq} added to the list')
+            last_packet_added+=1
 
-                elif seq >= last_ack_sent + 1: # Rather than throwing away packets that arrive in the wrong order, still put the packets in the list
-                    # send ack
-                    sequence_number = 0
-                    acknowledgment_number = seq
-                    window = 64000
-                    flagg = 4
-                    total_received += len(data_from_msg) # TESTING. CAN DELETE
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
 
-                    ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, empty_data)
-                    serverSocket.sendto(ACK_packet, client_addr)
-                    last_ack_sent += 1 # confirm that packet has been sent
 
-                    print(f"Send ack {acknowledgment_number}")
-                    # add packet to list
-                    data_list.append(data_from_msg)
-                    seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
+            seq_list.append(seq)
 
-                    #adding the size of the packet to the total data
-                    sizedata+=len(packet)
+            # Arguments in ack packet.
+            ack_number = seq
+            flagg = 4 # sets the ack flag
 
-                    print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
-                    print("\n\n") # TESTING, CAN DELETE
-                else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
-                    # --> server has received packets 5 and 6 while 4 has not arrived yet
-                    # --> put seq 4 in correct order
-                    #print(f"receive packet with seq: {seq}") # TESTING, CAN DELETE
-                    data_list.insert(seq, data_from_msg) 
-                    seq_list.insert(seq, seq) # TESTING, CAN DELETE
-                    print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
-                    print("\n\n") # TESTING, CAN DELETE
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+            sequence_number+=1
+            next_expected_seq+=1
 
-                    #adding the size of the packet to the total data
-                    sizedata+=len(packet)
 
-                    # return ACK of that missing packet to client
-                    sequence_number = 0
-                    ack_number = seq
-                    window = 64000
-                    flagg = 4
-                    total_received += len(data_from_msg) # TESTING. CAN DELETE
-                    ACK_packet = create_packet(sequence_number, ack_number, flagg, window, empty_data)
-                    serverSocket.sendto(ACK_packet, client_addr)
-                    last_ack_sent += 1 # confirm that packet has been sent
-        except error:
-            print("have problem with receiving data")
+            print(f'Sent ack {ack_number}')
+
+            #If buffer has packets in it
+            
+            if len(buffer) > 0:
+                
+                #Loops through all elements in buffer
+                i=0
+                while i < len(buffer):
+                    p = buffer[i]
+                    #If the packet is the next in main list, its added
+                    if p.seq == last_packet_added+1:
+                        buffer.remove(p)
+                        data_list.append(p.data)
+                        seq_list.append(p.seq)
+                        print(f'Packet {p.seq} added to the list')
+                        last_packet_added+=1
+                    else:
+                        i+=1
+                    print(f'Buffer has {len(buffer)} elements')
+            #print(f"Current seq list: {seq_list}")
+                    
+            
+            
+        #If out of order -> add to buffer
+        elif seq > next_expected_seq:
+
+            pack=One_Packet(seq,data)
+            buffer.append(pack)
+
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
+
+
+
+            print(f'Packet {seq} added to the buffer')
+            
+            # Arguments in ack packet.
+            ack_number = seq
+            flagg = 4 # sets the ack flag
+
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+            sequence_number+=1
+            
+            print(f'Sent ack {ack_number}')
+
+
+        #If the packet already has been added to the 
+        elif seq < last_packet_added:
+            
+            # Arguments in ack packet.
+            ack_number = seq
+            flagg = 4 # sets the ack flag
+
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+            sequence_number+=1
+            
+            print(f'Sent ack {ack_number}')
 
     #Calculating the time
     endtime = time.time()
@@ -732,11 +790,33 @@ def SR_server(serverSocket, file_name, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
+    print('Total data: ',sizedata)
+    print('Total time: ',totalduration)
+
+    filename = join_file(data_list,file_name)
+    try:
+        # Open picture
+        img = Image.open(filename)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+    
     """
-    myfile = join_file(data_list, file_name)
-    img = Image.open(myfile)
-    img.show()
+    try:
+        # Open picture
+        img = Image.open(filename)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+    
     """
+
 
 # ------------------------------------------------------------------------------#
 #                                END OF SR                                      #
