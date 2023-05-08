@@ -55,6 +55,10 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #157 218  GBN
 #175 556 SR 189 407
 
+#Det er fordi det er mer data som blir sendt med GBN, alle pakkene sendes på nytt igjen og da blir det "mer throughput" for det er mer data å dele på
+
+
+
 def roundtriptime(bonus,IPaddress):
     if bonus:
         rtt = ping3.ping(IPaddress)
