@@ -113,11 +113,6 @@ def join_file(list, filename):
             f.write(part)
     return filename
 
-
-class One_Packet:
-    def __init__(self,seq, data):
-        self.seq = seq
-        self.data = data
 # ------------------------------------------------------------------------------#
 #                            Done handle file                                   #
 # ------------------------------------------------------------------------------#
