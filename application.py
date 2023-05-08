@@ -268,8 +268,7 @@ def GBN_server(filename, serverSocket, test):
 
         packet, client_address = serverSocket.recvfrom(2048)
 
-        #adding the size of the packet to the total data
-        sizedata+=len(packet)
+        
         
         # Extracting the header
         header = packet[:12]
@@ -301,6 +300,8 @@ def GBN_server(filename, serverSocket, test):
             # Puts the data in the list
             data_list.append(data)
             print('Added packet nr '+str(seq)+' to the list')
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
 
             #update last packet added to the list
             last_packet_added+=1
@@ -352,7 +353,7 @@ def GBN_server(filename, serverSocket, test):
     file_content = f.read()
     print(file_content)
     
-    """
+    
 
     try:
         # Åpne bildet
@@ -363,6 +364,8 @@ def GBN_server(filename, serverSocket, test):
 
     except IOError:
         print("Kan ikke åpne bildefilen")
+
+    """
         
 
     
@@ -553,7 +556,7 @@ def SAW_Server(filename,serverSocket, test):
 # ------------------------------------------------------------------------------#
  
 
-def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
+def SR_client_new(clientSocket, server_Address, test, filename, window_size,rtt):
     data_list = file_splitting(filename)
 
     base = 0 #First i window and last ack to be recevied
@@ -575,23 +578,30 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
             print('Next to send: ',next_to_send)
             data=data_list[next_to_send]
             
+            seq_number=next_to_send
 
             #Creating and sending data
-            packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data) 
-            clientSocket.sendto(packet,server_Address) 
-            print(f'Sendt seq: {seq_number} av {len(data_list)}')
+            packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data)
+
+            if next_to_send == 10 and "loss" in test:
+                next_to_send += 1
+                print("drop pakke 10")
+                test = "something else"
+            else:
+                clientSocket.sendto(packet,server_Address) 
+                print(f'Sendt seq: {seq_number}')
 
             datasize+=len(packet)
 
             #Updating the list of sent packets in winodw, and next seq number
             packets_sent.append(packet)
             next_to_send+=1
-            seq_number+=1
+            
         
         #setting timeout
         clientSocket.settimeout(rtt)
 
-    
+        
         try:
             #reveices ack from server
             ack_from_server, serverAddr = clientSocket.recvfrom(2048)
@@ -601,6 +611,8 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
 
             if ack >= base and ack < base + window_size:
                 print('Received ACK for packet:', ack)
+                print('ack - base =', ack-base)
+                print(f'Lengden av pakker: {len(packets_sent)}')
                 packets_sent[ack - base] = None
                 if ack == base:
                     # Advance the sliding window and remove the ACKed packets from the packets list
@@ -622,6 +634,18 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
                 if pack is not None:
                     clientSocket.sendto(pack,server_Address) 
                     print(f'Resent seq: {base+i} beacuse of UNacked.')
+        
+        """
+        if next_to_send==10 and "loss" in test:
+            data=data_list[next_to_send]
+            seq_number=next_to_send
+            #Creating and sending data
+            packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data) 
+            packets_sent.append(packet)
+            next_to_send += 1
+            print("drop pakke 10")
+            test = "something else"
+        """
 
     print('Lengden av data listen: '+str(len(data_list)))        
     print('Lengden av datafilen: ',datasize)
@@ -630,7 +654,7 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
             
 
 
-def SR_client_old(clientSocket, server_Addr, test, file_sent, window_size,rtt):
+def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     # data list from file
     raw_datalist = file_splitting(file_sent) # array contains raw data
 
@@ -656,9 +680,9 @@ def SR_client_old(clientSocket, server_Addr, test, file_sent, window_size,rtt):
         # and send packets within WINDOW_SIZE
         while next_to_send < base + WINDOW_SIZE and next_to_send < len(formatted_packets_list): 
             
-            if "loss" in test and next_to_send == 3: # drop packet test
+            if "loss" in test and next_to_send == 10: # drop packet test
                 next_to_send += 1
-                print("drop pakke 3")
+                print("drop pakke 10")
                 test = "something else"
                 
             # send all packets in this window
@@ -764,9 +788,6 @@ def SR_server(serverSocket, file_name, test):
     while True:
         packet, client_address = serverSocket.recvfrom(2048)
 
-        #adding the size of the packet to the total data
-        sizedata+=len(packet)
-
         # extract the data from the header
         data = packet[12:]
         
@@ -796,6 +817,10 @@ def SR_server(serverSocket, file_name, test):
             data_list.append(data)
             print(f'Packet {seq} added to the list')
             last_packet_added+=1
+
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
+
 
             seq_list.append(seq)
 
@@ -840,6 +865,10 @@ def SR_server(serverSocket, file_name, test):
             pack=One_Packet(seq,data)
             buffer.append(pack)
 
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
+
+
 
             print(f'Packet {seq} added to the buffer')
             
@@ -877,8 +906,6 @@ def SR_server(serverSocket, file_name, test):
     throughput(sizedata,totalduration)
 
     filename = join_file(data_list,file_name)
-    
-
     try:
         # Open picture
         img = Image.open(filename)
@@ -888,12 +915,25 @@ def SR_server(serverSocket, file_name, test):
 
     except IOError:
         print("Kan ikke åpne bildefilen")
+    
+    """
+    try:
+        # Open picture
+        img = Image.open(filename)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+    
+    """
 
 
 
      
 
-def SR_server_Old(serverSocket, file_name, test):
+def SR_server_old(serverSocket, file_name, test):
     data_list = []
     empty_data = b''
     total_received = 0
@@ -911,8 +951,6 @@ def SR_server_Old(serverSocket, file_name, test):
         try:
             packet, client_addr = serverSocket.recvfrom(2048)
 
-            #adding the size of the packet to the total data
-            sizedata+=len(packet)
 
             # extract header
             header = packet[:12]
@@ -931,8 +969,8 @@ def SR_server_Old(serverSocket, file_name, test):
                 break
             else: # if not closing signal
                 print(f"receive packet with seq: {seq}")
-                if seq == 7 and "skipack" in test: # DROP ACK TESTING
-                    print("drop ack 7\n\n")
+                if seq == 40 and "skipack" in test: # DROP ACK TESTING
+                    print("drop ack 40\n\n")
                     test = "something else"
                     last_ack_sent += 1 # Skip to the next ACK message
 
@@ -953,6 +991,9 @@ def SR_server_Old(serverSocket, file_name, test):
                     data_list.append(data_from_msg)
                     seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
 
+                    #adding the size of the packet to the total data
+                    sizedata+=len(packet)
+
                     print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
                     print("\n\n") # TESTING, CAN DELETE
                 else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
@@ -963,6 +1004,9 @@ def SR_server_Old(serverSocket, file_name, test):
                     seq_list.insert(seq, seq) # TESTING, CAN DELETE
                     print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
                     print("\n\n") # TESTING, CAN DELETE
+
+                    #adding the size of the packet to the total data
+                    sizedata+=len(packet)
 
                     # return ACK of that missing packet to client
                     sequence_number = 0
@@ -983,9 +1027,11 @@ def SR_server_Old(serverSocket, file_name, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
+    """
     myfile = join_file(data_list, file_name)
     img = Image.open(myfile)
     img.show()
+    """
 
 # ------------------------------------------------------------------------------#
 #                                END OF SR                                      #
