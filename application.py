@@ -648,8 +648,6 @@ def SR_server(serverSocket, file_name, test):
         try:
             packet, client_addr = serverSocket.recvfrom(2048)
 
-            #adding the size of the packet to the total data
-            sizedata+=len(packet)
 
             # extract header
             header = packet[:12]
@@ -668,8 +666,8 @@ def SR_server(serverSocket, file_name, test):
                 break
             else: # if not closing signal
                 print(f"receive packet with seq: {seq}")
-                if seq == 7 and "skipack" in test: # DROP ACK TESTING
-                    print("drop ack 7\n\n")
+                if seq == 40 and "skipack" in test: # DROP ACK TESTING
+                    print("drop ack 40\n\n")
                     test = "something else"
                     last_ack_sent += 1 # Skip to the next ACK message
 
@@ -690,6 +688,9 @@ def SR_server(serverSocket, file_name, test):
                     data_list.append(data_from_msg)
                     seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
 
+                    #adding the size of the packet to the total data
+                    sizedata+=len(packet)
+
                     print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
                     print("\n\n") # TESTING, CAN DELETE
                 else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
@@ -700,6 +701,9 @@ def SR_server(serverSocket, file_name, test):
                     seq_list.insert(seq, seq) # TESTING, CAN DELETE
                     print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
                     print("\n\n") # TESTING, CAN DELETE
+
+                    #adding the size of the packet to the total data
+                    sizedata+=len(packet)
 
                     # return ACK of that missing packet to client
                     sequence_number = 0
@@ -720,9 +724,11 @@ def SR_server(serverSocket, file_name, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
+    """
     myfile = join_file(data_list, file_name)
     img = Image.open(myfile)
     img.show()
+    """
 
 # ------------------------------------------------------------------------------#
 #                                END OF SR                                      #
