@@ -758,7 +758,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     close_connection_client(clientSocket, server_Addr)
 
 
-def SR_server(serverSocket, file_name, test):
+def SR_server_new(serverSocket, file_name, test):
     #list with the data and buffer
     data_list = [] 
     buffer = []
@@ -933,7 +933,7 @@ def SR_server(serverSocket, file_name, test):
 
      
 
-def SR_server_old(serverSocket, file_name, test):
+def SR_server(serverSocket, file_name, test):
     data_list = []
     empty_data = b''
     total_received = 0
