@@ -242,8 +242,7 @@ def GBN_server(filename, serverSocket, test):
 
         packet, client_address = serverSocket.recvfrom(2048)
 
-        #adding the size of the packet to the total data
-        sizedata+=len(packet)
+        
         
         # Extracting the header
         header = packet[:12]
@@ -275,13 +274,18 @@ def GBN_server(filename, serverSocket, test):
             # Puts the data in the list
             data_list.append(data)
             print('Added packet nr '+str(seq)+' to the list')
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
 
             #update last packet added to the list
             last_packet_added+=1
 
          # If at packet nr. 13, we skip sending the ack (the ack got lost).
-        if seq == 13 and "skipack" in test:
-            print('\n\nDroppet ack nr 13\n\n')
+        else:
+            print(f"Throws packet {seq} away")
+        
+        if seq == 21 and "skipack" in test:
+            print('\n\nDroppet ack nr 21\n\n')
             
             # set to false so that the skip only happens once.
             test = "something else"
@@ -323,7 +327,7 @@ def GBN_server(filename, serverSocket, test):
     file_content = f.read()
     print(file_content)
     
-    """
+    
 
     try:
         # Åpne bildet
@@ -334,6 +338,8 @@ def GBN_server(filename, serverSocket, test):
 
     except IOError:
         print("Kan ikke åpne bildefilen")
+
+    """
         
 
     
