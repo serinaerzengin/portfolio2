@@ -155,12 +155,13 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
 
     base = 0 #First i window and last ack to be recevied
     next_to_send = 0
-    print('Lengden av data listen: '+str(len(data_list)))
+    
     
     data = data_list[base]
     seq_number = next_to_send
     acknowledgement_number = 0
     flags = 0
+    datasize=0
 
     while base < len(data_list): #MÅ HA NOE ANNET ENN TRUE?
 
@@ -186,6 +187,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 clientSocket.sendto(packet,server_Address) 
                 print(f'Sendt seq: {seq_number}')
 
+                datasize+=len(packet)
                 #Updates next packet to send, and seq number
                 next_to_send+=1
 
@@ -217,8 +219,9 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
                 next_to_send=base
     
+    print('Lengden av data listen: '+str(len(data_list)))
+    print('Lengden av datafilen: ',datasize)
     close_connection_client(clientSocket, server_Address)
-   
 
 
 def GBN_server(filename, serverSocket, test): 
