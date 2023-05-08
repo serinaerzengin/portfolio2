@@ -69,6 +69,8 @@ def throughput(sizedata, totalduration):
     print(f'Throughput: {throughput} Mbps')
     print('--------------------------------------')
 
+    print(f'size of data: {sizedata}')
+
     
     
 
@@ -145,7 +147,7 @@ def close_connection_server(serverSocket, client_addr):
 
 
 # ------------------------------------------------------------------------------#
-#                                 GBN                                           #
+#                                   GBN                                         #
 # ------------------------------------------------------------------------------#
 
 
@@ -222,6 +224,8 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
     print('Lengden av data listen: '+str(len(data_list)))
     print('Lengden av datafilen: ',datasize)
     close_connection_client(clientSocket, server_Address)
+
+
 
 
 def GBN_server(filename, serverSocket, test): 
@@ -346,13 +350,13 @@ def GBN_server(filename, serverSocket, test):
         
 
     
-    
 
 
 
 # ------------------------------------------------------------------------------#
-#                                End of GBN                                     #
+#                                 End of GBN                                    #
 # ------------------------------------------------------------------------------#
+
 
 
 
