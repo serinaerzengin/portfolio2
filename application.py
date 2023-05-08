@@ -69,6 +69,8 @@ def throughput(sizedata, totalduration):
     print(f'Throughput: {throughput} Mbps')
     print('--------------------------------------')
 
+    print(f'size of data: {sizedata}')
+
     
     
 
@@ -85,9 +87,10 @@ def file_splitting(file_sent):
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
-            list.append(data) # add to an array
             if not data: # break if there is no more data
                 break
+            else:
+                list.append(data) # add to an array
     return list
 
 def join_file(list, filename):
@@ -144,7 +147,7 @@ def close_connection_server(serverSocket, client_addr):
 
 
 # ------------------------------------------------------------------------------#
-#                                 GBN                                           #
+#                                   GBN                                         #
 # ------------------------------------------------------------------------------#
 
 
@@ -154,12 +157,13 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
 
     base = 0 #First i window and last ack to be recevied
     next_to_send = 0
-    print('Lengden av data listen: '+str(len(data_list)))
+    
     
     data = data_list[base]
     seq_number = next_to_send
     acknowledgement_number = 0
     flags = 0
+    datasize=0
 
     while base < len(data_list): #MÅ HA NOE ANNET ENN TRUE?
 
@@ -185,6 +189,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 clientSocket.sendto(packet,server_Address) 
                 print(f'Sendt seq: {seq_number}')
 
+                datasize+=len(packet)
                 #Updates next packet to send, and seq number
                 next_to_send+=1
 
@@ -216,8 +221,11 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
                 next_to_send=base
     
+    print('Lengden av data listen: '+str(len(data_list)))
+    print('Lengden av datafilen: ',datasize)
     close_connection_client(clientSocket, server_Address)
-   
+
+
 
 
 def GBN_server(filename, serverSocket, test): 
@@ -241,8 +249,7 @@ def GBN_server(filename, serverSocket, test):
 
         packet, client_address = serverSocket.recvfrom(2048)
 
-        #adding the size of the packet to the total data
-        sizedata+=len(packet)
+        
         
         # Extracting the header
         header = packet[:12]
@@ -274,13 +281,18 @@ def GBN_server(filename, serverSocket, test):
             # Puts the data in the list
             data_list.append(data)
             print('Added packet nr '+str(seq)+' to the list')
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
 
             #update last packet added to the list
             last_packet_added+=1
 
          # If at packet nr. 13, we skip sending the ack (the ack got lost).
-        if seq == 13 and "skipack" in test:
-            print('\n\nDroppet ack nr 13\n\n')
+        else:
+            print(f"Throws packet {seq} away")
+        
+        if seq == 21 and "skipack" in test:
+            print('\n\nDroppet ack nr 21\n\n')
             
             # set to false so that the skip only happens once.
             test = "something else"
@@ -322,7 +334,7 @@ def GBN_server(filename, serverSocket, test):
     file_content = f.read()
     print(file_content)
     
-    """
+    
 
     try:
         # Åpne bildet
@@ -333,6 +345,8 @@ def GBN_server(filename, serverSocket, test):
 
     except IOError:
         print("Kan ikke åpne bildefilen")
+
+    """
         
 
     
@@ -340,8 +354,9 @@ def GBN_server(filename, serverSocket, test):
 
 
 # ------------------------------------------------------------------------------#
-#                                End of GBN                                     #
+#                                 End of GBN                                    #
 # ------------------------------------------------------------------------------#
+
 
 
 
@@ -641,8 +656,6 @@ def SR_server(serverSocket, file_name, test):
         try:
             packet, client_addr = serverSocket.recvfrom(2048)
 
-            #adding the size of the packet to the total data
-            sizedata+=len(packet)
 
             # extract header
             header = packet[:12]
@@ -661,8 +674,8 @@ def SR_server(serverSocket, file_name, test):
                 break
             else: # if not closing signal
                 print(f"receive packet with seq: {seq}")
-                if seq == 7 and "skipack" in test: # DROP ACK TESTING
-                    print("drop ack 7\n\n")
+                if seq == 40 and "skipack" in test: # DROP ACK TESTING
+                    print("drop ack 40\n\n")
                     test = "something else"
                     last_ack_sent += 1 # Skip to the next ACK message
 
@@ -683,6 +696,9 @@ def SR_server(serverSocket, file_name, test):
                     data_list.append(data_from_msg)
                     seq_list.append(acknowledgment_number) # TESTING, CAN DELETE
 
+                    #adding the size of the packet to the total data
+                    sizedata+=len(packet)
+
                     print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
                     print("\n\n") # TESTING, CAN DELETE
                 else: # if seq from client is 4 (resend since it is dropped) while last_ack_sent is 5 
@@ -693,6 +709,9 @@ def SR_server(serverSocket, file_name, test):
                     seq_list.insert(seq, seq) # TESTING, CAN DELETE
                     print(f"Current seq list: {seq_list}") # TESTING, CAN DELETE
                     print("\n\n") # TESTING, CAN DELETE
+
+                    #adding the size of the packet to the total data
+                    sizedata+=len(packet)
 
                     # return ACK of that missing packet to client
                     sequence_number = 0
@@ -713,9 +732,11 @@ def SR_server(serverSocket, file_name, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
+    """
     myfile = join_file(data_list, file_name)
     img = Image.open(myfile)
     img.show()
+    """
 
 # ------------------------------------------------------------------------------#
 #                                END OF SR                                      #
