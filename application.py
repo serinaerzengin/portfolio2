@@ -85,7 +85,11 @@ def throughput(sizedata, totalduration):
 
     print(f'size of data: {sizedata}')
 
-    
+class One_Packet:
+    def __init__(self,seq, data):
+        self.seq = seq
+        self.data = data
+   
     
 
 # ------------------------------------------------------------------------------#
@@ -340,6 +344,9 @@ def GBN_server(filename, serverSocket, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
+    print('Total data: ',sizedata,'\nTotal time: ',totalduration)
+    print('Lengden av listen: ',len(data_list))
+
     filename = join_file(data_list,filename)
     """   
     #Tekst fil skrive ut
@@ -551,7 +558,7 @@ def SAW_Server(filename,serverSocket, test):
 # ------------------------------------------------------------------------------#
  
 
-def SR_client_new(clientSocket, server_Address, test, filename, window_size,rtt):
+def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
     data_list = file_splitting(filename)
 
     base = 0 #First i window and last ack to be recevied
@@ -567,7 +574,7 @@ def SR_client_new(clientSocket, server_Address, test, filename, window_size,rtt)
 
 
         # Loop to send packets to the server
-    while next_to_send<len(data_list):
+    while base<len(data_list):
         # Fill the sliding window with packets up to the window size
         while next_to_send < base + window_size and len(packets_sent) < window_size and next_to_send<len(data_list):
             print('Next to send: ',next_to_send)
@@ -579,7 +586,6 @@ def SR_client_new(clientSocket, server_Address, test, filename, window_size,rtt)
             packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data)
 
             if next_to_send == 10 and "loss" in test:
-                next_to_send += 1
                 print("drop pakke 10")
                 test = "something else"
             else:
@@ -607,7 +613,7 @@ def SR_client_new(clientSocket, server_Address, test, filename, window_size,rtt)
             if ack >= base and ack < base + window_size:
                 print('Received ACK for packet:', ack)
                 print('ack - base =', ack-base)
-                print(f'Lengden av pakker: {len(packets_sent)}')
+                print(f'Lengden av pakker: {len(packets_sent)}\n\n')
                 packets_sent[ack - base] = None
                 if ack == base:
                     # Advance the sliding window and remove the ACKed packets from the packets list
@@ -642,14 +648,14 @@ def SR_client_new(clientSocket, server_Address, test, filename, window_size,rtt)
             test = "something else"
         """
 
-    print('Lengden av data listen: '+str(len(data_list)))        
+    print('Lengden av data listen: ',len(data_list))        
     print('Lengden av datafilen: ',datasize)
     close_connection_client(clientSocket, server_Address)
     
             
 
 
-def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
+def SR_client_old(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     # data list from file
     raw_datalist = file_splitting(file_sent) # array contains raw data
 
@@ -753,7 +759,7 @@ def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
     close_connection_client(clientSocket, server_Addr)
 
 
-def SR_server_new(serverSocket, file_name, test):
+def SR_server(serverSocket, file_name, test):
     #list with the data and buffer
     data_list = [] 
     buffer = []
@@ -900,7 +906,10 @@ def SR_server_new(serverSocket, file_name, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
+    print('Total data: ',sizedata,'\nTotal time: ',totalduration)
+
     filename = join_file(data_list,file_name)
+    """
     try:
         # Open picture
         img = Image.open(filename)
@@ -911,7 +920,7 @@ def SR_server_new(serverSocket, file_name, test):
     except IOError:
         print("Kan ikke åpne bildefilen")
     
-    """
+    
     try:
         # Open picture
         img = Image.open(filename)
@@ -928,7 +937,7 @@ def SR_server_new(serverSocket, file_name, test):
 
      
 
-def SR_server(serverSocket, file_name, test):
+def SR_server_old(serverSocket, file_name, test):
     data_list = []
     empty_data = b''
     total_received = 0
@@ -1014,6 +1023,7 @@ def SR_server(serverSocket, file_name, test):
                     last_ack_sent += 1 # confirm that packet has been sent
         except error:
             print("have problem with receiving data")
+        
 
     #Calculating the time
     endtime = time.time()
@@ -1022,10 +1032,12 @@ def SR_server(serverSocket, file_name, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
-    """
+    print('Lengden av listen: ',len(data_list))
+    print('Total data: ',sizedata,'\nTotal time: ',totalduration)
     myfile = join_file(data_list, file_name)
     img = Image.open(myfile)
     img.show()
+    """
     """
 
 # ------------------------------------------------------------------------------#
