@@ -175,6 +175,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
 
     base = 0 #First i window and last ack to be recevied
     next_to_send = 0
+    lastdropped = 0
     
     
     data = data_list[base]
@@ -186,10 +187,11 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
     while base < len(data_list): #MÅ HA NOE ANNET ENN TRUE?
 
          #If packet 44 its dropped and skip one round
-        if next_to_send == 44 and "loss" in test: ##SJEKK OM DET GÅR MED str(test) og at den da ikke trenger å ha default i argumentet
-            print('\n\nDropper pakke nr 44\n') #SØRG FOR AT DEN FORTSATT SENDER OG IKKE HOPPER OVER DENNE SENDINGEN
+        if test and next_to_send%test == 0 and next_to_send > lastdropped: ##SJEKK OM DET GÅR MED str(test) og at den da ikke trenger å ha default i argumentet
+            print(f'\n\nDropper pakke nr {next_to_send}\n') #SØRG FOR AT DEN FORTSATT SENDER OG IKKE HOPPER OVER DENNE SENDINGEN
+            lastdropped=next_to_send
             next_to_send+=1
-            test = "something else"
+            
        
         #If not packet 44, we send normally
         else:
@@ -256,6 +258,7 @@ def GBN_server(filename, serverSocket, test):
     flagg = 0
     last_packet_added = -1
     last_ack_sent = -1
+    lastdropped=0
 
     #Marking start time
     starttime=time.time()
@@ -309,11 +312,10 @@ def GBN_server(filename, serverSocket, test):
         else:
             print(f"Throws packet {seq} away")
         
-        if seq == 21 and "skipack" in test:
-            print('\n\nDroppet ack nr 21\n\n')
+        if test and seq%test == 0 and seq > lastdropped:
+            print(f'\n\nDroppet ack nr {seq}\n\n')
+            lastdropped=seq
             
-            # set to false so that the skip only happens once.
-            test = "something else"
             
         else:
             # Check to make sure to send ack if:
@@ -571,6 +573,7 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
     flags = 0
 
     datasize=0
+    lastdropped = 0
 
 
         # Loop to send packets to the server
@@ -585,9 +588,9 @@ def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
             #Creating and sending data
             packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data)
 
-            if next_to_send == 10 and "loss" in test:
-                print("drop pakke 10")
-                test = "something else"
+            if test and next_to_send%test == 0 and next_to_send > lastdropped:
+                print("drop packet ",next_to_send)
+                lastdropped=next_to_send
             else:
                 clientSocket.sendto(packet,server_Address) 
                 print(f'Sendt seq: {seq_number}')
@@ -778,11 +781,13 @@ def SR_server(serverSocket, file_name, test):
 
     #varibale for amount data received
     sizedata=0
+    
 
     #helping variable
     next_expected_seq = 0
     last_packet_added = -1
     last_ack_number = -1
+    lastdropped = 0
 
     #Marking start time
     starttime=time.time()
@@ -808,9 +813,9 @@ def SR_server(serverSocket, file_name, test):
             close_connection_server(serverSocket, client_address)
             break
         
-        elif seq == 40 and "skipack" in test:
-            print("-----------DROP ACK 40-------------\n\n")
-            test = "something else"
+        elif test and seq%test == 0 and seq > lastdropped:
+            print(f"-----------DROP ACK {seq}-------------\n\n")
+            lastdropped=seq
             
 
         #If its the packet in the right order -> add to main list
@@ -1283,7 +1288,7 @@ parser.add_argument('-p', '--port', default=8088, type=check_port, help="Port nu
 parser.add_argument("-r", "--modus", choices=['SAW', 'GBN', 'SR'], help="Choose one of the modus!")
 
 parser.add_argument("-f", "--file", help="File name ")
-parser.add_argument('-t','--test', type=str, default="", help='use this flag to run the program test mode. On client: loss - On server: skipack')
+parser.add_argument('-t','--test', type=int, default=None, help='use this flag to run the program test mode. On client: loss - On server: skipack')
 # --------------------------------------- Done argument for Client/server ------------------------------------------------------------#
 
 
