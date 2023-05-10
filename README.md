@@ -22,7 +22,8 @@ This application is a simple transport protocol that provides reliable data deli
 `-p` or `--port` = Allows to select the server's **port number** (Range: [1024-65535]).\
 `-r` or `--modus` =  Allows to choose the **reliable method** (SAW, GBN, SR).\
 `-t` or `--test` =  Allows to choose the **test mode** (loss).\
-`-w` or `--window` =  Allows to choose the **window size** .
+`-w` or `--window` =  Allows to choose the **window size** .\
+`-B` or `--bonus` =  Active the **second bonus** exercise.
 <br />
 
 
@@ -30,7 +31,8 @@ This application is a simple transport protocol that provides reliable data deli
 <br />
 
 ###  Example to run with flag/options SAW
-**NOTE: The arguments do not need to be in a spesific order.**
+**NOTE: The arguments do not need to be in a spesific order.**\
+**NOTE: Remove '-t' flag if you want to run without test cases.**
 
 1. `server`
 ```
@@ -44,7 +46,8 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r SAW -t loss -f hei.JPG
 <br />
 
 ###  Example to run with flag/options GBN
-**NOTE: The arguments do not need to be in a spesific order.**
+**NOTE: The arguments do not need to be in a spesific order.**\
+**NOTE: Remove '-t' flag if you want to run without test cases.**
 
 1. `server`
 ```
@@ -58,7 +61,8 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r GBN -w 10 -t loss -f hei.JPG
 <br />
 
 ###  Example to run with flag/options SR
-**NOTE: The arguments do not need to be in a spesific order.**
+**NOTE: The arguments do not need to be in a spesific order.**\
+**NOTE: Remove '-t' flag if you want to run without test cases.**
 
 1. `server`
 ```
@@ -88,8 +92,8 @@ After installing Pillow, we imort Image from PIL, wich makes it possible to open
 
 
 #### Install ping3
-Ping3 is Imported into the project so that the roundtrip time can be calculated.\
-If you run the client side and add the flag -B, then the application will use the ping command from ping 3 to calucate the roundtrip time, and use rtt*4 as the socket timeout. If you dont use -B, the timeout will be set to default 0.5ms. \
+Ping3 is imported into the project so that the roundtrip time can be calculated.\
+If you run the client side and add the flag -B, then the application will use the ping command from ping3 to calucate the roundtrip time (rtt), and use rtt*4 as the socket timeout. If you dont use -B, the timeout will be set to default 0.5ms. \
 `sudo python3 -m pip install ping3`
 
 
