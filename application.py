@@ -275,6 +275,7 @@ def GBN_server(filename, serverSocket, test):
         # parsing the header
         seq, ack, flagg, win = parse_header(header)
         print('\nReceived a packet with seq: '+str(seq))
+        print('\n\n\nflags: ',flagg)
 
         #parsing the flags
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
@@ -472,9 +473,6 @@ def SAW_Server(filename,serverSocket, test):
     while True:
         #waits for packets
         packet, client_address = serverSocket.recvfrom(2048)
-        
-        #adding the size of the packet to the total data
-        sizedata+=len(packet)
 
         # Extracting the header
         header = packet[:12]
@@ -509,6 +507,8 @@ def SAW_Server(filename,serverSocket, test):
                
                 #Puts the data in the list
                 data_list.append(data)
+                #adding the size of the packet to the total data
+                sizedata+=len(packet)
                 ack_number=seq
                 flagg = 4 # sets the ack flag
                 #creates and send ACK-msg to server
