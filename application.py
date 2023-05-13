@@ -18,7 +18,6 @@ def create_packet(seq, ack, flags, win, data): # parameters are sequence number,
     header = pack(header_format, seq, ack, flags, win) # Create a header of 12
 
     packet = header + data # header is 12, and data is 1460. This packet should be 1472 bytes
-    #print (f'packet containing header + data of size {len(packet)}') # show the length of the packe
 
     return packet
 
@@ -44,40 +43,37 @@ def parse_flags(flags): # get the values of syn, ack and fin
 # ------------------------------------------------------------------------------#
 #                                BONUS AND OTHER                                #
 # ------------------------------------------------------------------------------#
-#133590 GBN Server 
-#133578 GBN Client
 
-#133578 SR Server
-#133566 SR Client
-
-#133590 SAW Server
-
-#157 218  GBN
-#175 556 SR 189 407
-
-#Det er fordi det er mer data som blir sendt med GBN, alle pakkene sendes på nytt igjen og da blir det "mer throughput" for det er mer data å dele på
-
-
-
+#Function to calculate round trip time in bonus task
 def roundtriptime(bonus,IPaddress):
+    #If -B flag is activated
     if bonus:
-        rtt = ping3.ping(IPaddress)
-        rtt = rtt*4
+    #Calculate the rtt, multiplie it with 4 to get the optimized rtt
+        rtt = ping3.ping(IPaddress) 
+        rtt = rtt*4 
+
+        #If not possible to calculate rtt
         if rtt is None:
             print(f"Failed to get round trip time from {IPaddress}")
+            #Set default rtt
             rtt = 0.5
-        
+    
+    #If not -B flag is activated
     else:
         rtt=0.5
+        #Set default rtt
+
 
     return rtt
 
+#Function to calculate throughput
 def throughput(sizedata, totalduration):
-    size_bit= sizedata*8
-    size_Mb=size_bit/1000
+
+    size_bit= sizedata*8 #From Byte -> bit
+    size_Mb=size_bit/1000 #From bit -> Megabit
     
-    throughput=size_Mb/totalduration
-    throughput='{0:.2f}'.format(throughput)
+    throughput=size_Mb/totalduration #Calculating throughput
+    throughput='{0:.2f}'.format(throughput) #only 2 decimals
     
     print('\n--------------------------------------')
     print(f'Throughput: {throughput} Mbps')
@@ -85,7 +81,10 @@ def throughput(sizedata, totalduration):
 
     print(f'size of data: {sizedata}')
 
+
+#Class used in SR server for adding packet inn buffer
 class One_Packet:
+    #constructor
     def __init__(self,seq, data):
         self.seq = seq
         self.data = data
@@ -100,17 +99,23 @@ class One_Packet:
 #                                Handle file                                    #
 # ------------------------------------------------------------------------------#
 
+# Split files in to right size packet, and add them to a data array
 def file_splitting(file_sent):
     list = []
+    
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
             if not data: # break if there is no more data
                 break
-            else:
+            else: # if there is data
                 list.append(data) # add to an array
+    
+    #Return list with all of the data packets in it. 
     return list
 
+
+# Join all the packets received in to a file
 def join_file(list, filename):
     with open(filename, 'wb') as f:
         for part in list:
@@ -126,24 +131,31 @@ def join_file(list, filename):
 #                           Close connection                                    #
 # ------------------------------------------------------------------------------#
 
+#Function to close connection from the client side, send fin-packet
 def close_connection_client(clientSocket, server_Addr):
+    # Variables to make fin-packet
     data = b''
     sequence_number = 0
     acknowledgement_number = 0
     window = 0
     flags = 2
+
+    # Create and send fin-packet
     fin_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
     clientSocket.sendto(fin_packet, server_Addr)
 
+    #Try to receieve a fin-ack packet
     try:
-        close_msg, serverAddr = clientSocket.recvfrom(2048)
-        seq, ack, flagg, win = parse_header(close_msg)
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-        if ack_flagg == 4: # check if this is ACK message
+        close_msg, serverAddr = clientSocket.recvfrom(2048) # Receive packet
+        seq, ack, flagg, win = parse_header(close_msg) # Parse header to get flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg) #Parse flags to get fin and ack flag
+        if ack_flagg == 4: # check if this is FIN-ACK message 
             print("Close connection from client!!!")
     except error:
         print("Can not close at the moment!!!")
 
+
+#Function to close connection server side
 def close_connection_server(serverSocket, client_addr):
     # create ACK
     sequence_number = 0
