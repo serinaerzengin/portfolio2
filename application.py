@@ -1084,9 +1084,10 @@ else: # Pass the conditions. This is when one of the moduses is activated
 
 
 #To open a text file og png file:
+"""
 if args.server:
     
-    """   
+       
     #Open text file:
     f = open(file, 'r')
     file_content = f.read()
