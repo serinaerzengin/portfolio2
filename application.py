@@ -1083,23 +1083,23 @@ else: # Pass the conditions. This is when one of the moduses is activated
 
 #To open a text file og png file:
 """   
-    #Open text file:
-    f = open(file, 'r')
-    file_content = f.read()
-    print(file_content)
-    
-    
+#Open text file:
+f = open(file, 'r')
+file_content = f.read()
+print(file_content)
 
-    #Open png file: 
-    # Need Pillow install (Look at read.me under Install) 
-    try:
-        # Åpne bildet
-        img = Image.open(file)
 
-        # Skriv ut bildet i terminalen
-        img.show()
 
-    except IOError:
-        print("Kan ikke åpne bildefilen")
+#Open png file: 
+# Need Pillow install (Look at read.me under Install) 
+try:
+    # Åpne bildet
+    img = Image.open(file)
+
+    # Skriv ut bildet i terminalen
+    img.show()
+
+except IOError:
+    print("Kan ikke åpne bildefilen")
 
     """
