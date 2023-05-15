@@ -457,11 +457,14 @@ def SAW_Server(filename,serverSocket, test):
     #list with the data
     data_list = [] 
 
+     #Variables for creating packet
     emptydata=b''
     sequence_number = 0
     ack_number = 0
     window = 0
     flagg = 0
+
+    #To help get packets in the right ordedr
     last_ack_number = -1
 
     #Marking start time
@@ -533,17 +536,10 @@ def SAW_Server(filename,serverSocket, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
+     
+    # Takes all the packets in the list and makes the file
     filename = join_file(data_list,filename)
 
-    try:
-        # Open picture
-        img = Image.open(filename)
-
-        # Skriv ut bildet i terminalen
-        img.show()
-
-    except IOError:
-        print("Kan ikke åpne bildefilen")
 
 # ------------------------------------------------------------------------------#
 #                           End of stop and wait                                #
