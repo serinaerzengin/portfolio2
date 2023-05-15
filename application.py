@@ -335,7 +335,8 @@ def SAW_Server(filename,serverSocket, test):
 
      
     # Takes all the packets in the list and makes the file
-    filename = join_file(data_list,filename)
+    file = join_file(data_list,filename)
+    return file
 
 
 # ------------------------------------------------------------------------------#
@@ -538,7 +539,8 @@ def GBN_server(filename, serverSocket, test):
 
     
     # Takes all the packets in the list and makes the file
-    filename = join_file(data_list,filename)
+    file = join_file(data_list,filename)
+    return file
     
 
 # ------------------------------------------------------------------------------#
@@ -863,11 +865,11 @@ def connection_establishment_server(serverSocket, modus, filename, test):
                 print("got ACK from client!") # CAN DELETE
                 print("Connection established with ", client_Addr)
                 if 'GBN' in modus:
-                    GBN_server(filename,serverSocket, test)
+                    file = GBN_server(filename,serverSocket, test)
                 if "SAW" in modus:
-                    SAW_Server(filename, serverSocket,  test)
+                    file = SAW_Server(filename, serverSocket,  test)
                 elif "SR" in modus:
-                    SR_server(serverSocket, filename, test)
+                    file = SR_server(serverSocket, filename, test)
             else:
                 print("Error: ACK not received!")
 
@@ -875,6 +877,8 @@ def connection_establishment_server(serverSocket, modus, filename, test):
             print("Error, Ack_number does not match")
     else:
         print("Error: SYN not received!")
+    
+    return file
 
     
 
@@ -895,7 +899,7 @@ def server_main(bind_IPadress, port, modus, filename, test):
     print("Server is ready to receive!!!")
     
     #sending socket to method thats establishing connection with client.
-    connection_establishment_server(serverSocket, modus, filename, test)
+    return connection_establishment_server(serverSocket, modus, filename, test)
         
 
             
@@ -1072,6 +1076,30 @@ elif args.file is None: #
 
 else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
-        server_main(args.bind, args.port, args.modus, args.file, args.test)
+        file = server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
         client_main(args.serverip, args.port, args.modus, args.file, args.test, args.window,args.bonus)
+
+
+#To open a text file og png file:
+"""   
+    #Open text file:
+    f = open(file, 'r')
+    file_content = f.read()
+    print(file_content)
+    
+    
+
+    #Open png file: 
+    # Need Pillow install (Look at read.me under Install) 
+    try:
+        # Åpne bildet
+        img = Image.open(file)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+
+    """
