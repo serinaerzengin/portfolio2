@@ -18,7 +18,6 @@ def create_packet(seq, ack, flags, win, data): # parameters are sequence number,
     header = pack(header_format, seq, ack, flags, win) # Create a header of 12
 
     packet = header + data # header is 12, and data is 1460. This packet should be 1472 bytes
-    #print (f'packet containing header + data of size {len(packet)}') # show the length of the packe
 
     return packet
 
@@ -45,25 +44,36 @@ def parse_flags(flags): # get the values of syn, ack and fin
 #                                BONUS AND OTHER                                #
 # ------------------------------------------------------------------------------#
 
+#Function to calculate round trip time in bonus task
 def roundtriptime(bonus,IPaddress):
+    #If -B flag is activated
     if bonus:
-        rtt = ping3.ping(IPaddress)
-        rtt = rtt*4
+    #Calculate the rtt, multiplie it with 4 to get the optimized rtt
+        rtt = ping3.ping(IPaddress) 
+        rtt = rtt*4 
+
+        #If not possible to calculate rtt
         if rtt is None:
             print(f"Failed to get round trip time from {IPaddress}")
+            #Set default rtt
             rtt = 0.5
-        
+    
+    #If not -B flag is activated
     else:
         rtt=0.5
+        #Set default rtt
+
 
     return rtt
 
+#Function to calculate throughput
 def throughput(sizedata, totalduration):
-    size_bit= sizedata*8
-    size_Mb=size_bit/1000
+
+    size_bit= sizedata*8 #From Byte -> bit
+    size_Mb=size_bit/1000 #From bit -> Megabit
     
-    throughput=size_Mb/totalduration
-    throughput='{0:.2f}'.format(throughput)
+    throughput=size_Mb/totalduration #Calculating throughput
+    throughput='{0:.2f}'.format(throughput) #only 2 decimals
     
     print('\n--------------------------------------')
     print(f'Throughput: {throughput} Mbps')
@@ -71,12 +81,14 @@ def throughput(sizedata, totalduration):
 
     print(f'size of data: {sizedata}')
 
+
+#Class used in SR server for adding packet inn buffer
 class One_Packet:
+    #constructor
     def __init__(self,seq, data):
         self.seq = seq
         self.data = data
-
-    
+   
     
 
 # ------------------------------------------------------------------------------#
@@ -87,17 +99,23 @@ class One_Packet:
 #                                Handle file                                    #
 # ------------------------------------------------------------------------------#
 
+# Split files in to right size packet, and add them to a data array
 def file_splitting(file_sent):
     list = []
+    
     with open(str(file_sent), 'rb') as file:
         while True:
             data = file.read(1460) # take only 1460 bytes from picture
             if not data: # break if there is no more data
                 break
-            else:
+            else: # if there is data
                 list.append(data) # add to an array
+    
+    #Return list with all of the data packets in it. 
     return list
 
+
+# Join all the packets received in to a file
 def join_file(list, filename):
     with open(filename, 'wb') as f:
         for part in list:
@@ -113,33 +131,42 @@ def join_file(list, filename):
 #                           Close connection                                    #
 # ------------------------------------------------------------------------------#
 
+#Function to close connection from the client side, send fin-packet
 def close_connection_client(clientSocket, server_Addr):
+    # Variables to make fin-packet
     data = b''
     sequence_number = 0
     acknowledgement_number = 0
     window = 0
-    flags = 2 # FIN flag are set to 1
+    flags = 2
+
+    # Create and send fin-packet
     fin_packet = create_packet(sequence_number, acknowledgement_number, flags, window, data)
     clientSocket.sendto(fin_packet, server_Addr)
 
+    #Try to receieve a fin-ack packet
     try:
-        close_msg, serverAddr = clientSocket.recvfrom(2048)
-        seq, ack, flagg, win = parse_header(close_msg)
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-        if ack_flagg + fin_flagg == 6: # check if this is ACK message #må endre her sånn at de forventer p fp fin-ack
+        close_msg, serverAddr = clientSocket.recvfrom(2048) # Receive packet
+        seq, ack, flagg, win = parse_header(close_msg) # Parse header to get flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg) #Parse flags to get fin and ack flag
+
+        if ack_flagg + fin_flagg == 6:  # check if this is FIN-ACK message 
             print("Close connection from client!!!")
     except error:
         print("Can not close at the moment!!!")
 
+
+#Function to close connection server side
 def close_connection_server(serverSocket, client_addr):
-    # create ACK
+    # Variables to create FIN-ACK
     sequence_number = 0
     acknowledgment_number = 0
     window = 64000
-    flagg = 6 # FIN and ack is set to 1 
-    # and send FIN-ACK back to client for confirmation
+    flagg = 6 # FIN and ACK is set to 1 
+
+    # Create packet and send FIN-ACK back to client for confirmation
     ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, b'')
-    serverSocket.sendto(ACK_packet, client_addr) # send SYN ACK to client
+    serverSocket.sendto(ACK_packet, client_addr) # send SYN ACK to clie
     
     print("The transfer is done! Server close now!!!!")
 
@@ -151,225 +178,10 @@ def close_connection_server(serverSocket, client_addr):
 
 
 
-# ------------------------------------------------------------------------------#
-#                                   GBN                                         #
-# ------------------------------------------------------------------------------#
-
-
-
-def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
-    data_list = file_splitting(filename)
-
-    base = 0 #First i window and last ack to be recevied
-    next_to_send = 0
-    
-    
-    data = data_list[base]
-    seq_number = next_to_send
-    acknowledgement_number = 0
-    flags = 0
-    datasize=0
-
-    while base < len(data_list): #MÅ HA NOE ANNET ENN TRUE?
-
-         #If packet 44 its dropped and skip one round
-        if next_to_send == 44 and "loss" in test: ##SJEKK OM DET GÅR MED str(test) og at den da ikke trenger å ha default i argumentet
-            print('\n\nDropper pakke nr 44\n') #SØRG FOR AT DEN FORTSATT SENDER OG IKKE HOPPER OVER DENNE SENDINGEN
-            next_to_send+=1
-            test = "something else"
-       
-        #If not packet 44, we send normally
-        else:
-            
-            #Sends packets until the window is full, as long as there is more packet to be sent 
-            while next_to_send < base + window and next_to_send < len(data_list):
-
-            
-                #Ssend packet    
-                
-                seq_number=next_to_send
-                # Creating and sending packet
-                data = data_list[seq_number] #getting packets to send in the right order
-                packet = create_packet(seq_number,acknowledgement_number,flags,window,data) 
-                clientSocket.sendto(packet,server_Address) 
-                print(f'Sendt seq: {seq_number}')
-
-                datasize+=len(packet)
-                #Updates next packet to send, and seq number
-                next_to_send+=1
-
-            # The window is full - now we wait on ack to move the window
-
-            clientSocket.settimeout(rtt)
-            
-            try:
-                #reveices ack from server
-                ack_from_server, serverAddr = clientSocket.recvfrom(2048)
-                
-                # parsing the header since the ack packet should be with no data
-                seq, ack, flagg, win = parse_header(ack_from_server)
-                print(f'Fikk ack: {ack}\n')
-
-                # Checks if the acknowledgement is for the right packet. 
-                # The ack should be for the first packet in the window (base)
-                if  base == ack:
-                    # parse flags
-                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-
-                    # Check if it has ack flagg marked
-                    if ack_flagg == 4:
-                        base+=1 # we move the window
-
-                
-
-            except timeout:
-                print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
-                next_to_send=base
-    
-    print('Lengden av data listen: '+str(len(data_list)))
-    print('Lengden av datafilen: ',datasize)
-    close_connection_client(clientSocket, server_Address)
-
-
-
-
-def GBN_server(filename, serverSocket, test): 
-    data_list = []
-
-    emptydata=b''
-    sequence_number = 0
-    ack_number = 0
-    window = 64000
-    flagg = 0
-    last_packet_added = -1
-    last_ack_sent = -1
-
-    #Marking start time
-    starttime=time.time()
-
-    #varibale for amount data received
-    sizedata=0
-
-    while True:
-
-        packet, client_address = serverSocket.recvfrom(2048)
-
-        
-        
-        # Extracting the header
-        header = packet[:12]
-
-        # parsing the header
-        seq, ack, flagg, win = parse_header(header)
-        print('\nReceived a packet with seq: '+str(seq))
-
-        #parsing the flags
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-
-        # check if this is a fin message
-        if fin_flagg == 2:
-            close_connection_server(serverSocket, client_address)
-            break
-
-       
-        # A packet should not be added if the ack of the pacet before got sent.
-        # therefore this if checks:    
-        #   1. to se if packets come in the right order
-        #   2. to se if the packet has been added before
-        # This if also makes sure each packet in the list has sent an ack before another packet gets added
-        if seq == last_packet_added+1 and last_packet_added == last_ack_sent: 
-            
-            # extract the data from the header
-            data = packet[12:]
-        
-
-            # Puts the data in the list
-            data_list.append(data)
-            print('Added packet nr '+str(seq)+' to the list')
-            #adding the size of the packet to the total data
-            sizedata+=len(packet)
-
-            #update last packet added to the list
-            last_packet_added+=1
-
-         # If at packet nr. 13, we skip sending the ack (the ack got lost).
-        else:
-            print(f"Throws packet {seq} away")
-        
-        if seq == 21 and "skipack" in test:
-            print('\n\nDroppet ack nr 21\n\n')
-            
-            # set to false so that the skip only happens once.
-            test = "something else"
-            
-        else:
-            # Check to make sure to send ack if:
-                # If the packet already has been recv and added to the list
-            # If so an ack is sent to inform client that the packet is received
-            if seq <= last_ack_sent+1:
-                
-                # Arguments in ack packet.
-                ack_number = seq
-                flagg = 4 # sets the ack flag
-
-                #creates and send ACK-msg to server
-                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
-                serverSocket.sendto(ack_packet, client_address)
-                sequence_number+=1
-
-                last_ack_sent=ack_number
-                
-                print('Sent ack packet: '+str(ack_number))
-                print('')
-            
-            #sets test to false so packet number 5 does not get skipped. 
-            
-    #Calculating the time
-    endtime = time.time()
-    totalduration=endtime-starttime
-    
-    #Sends to method that calcultates and prints througput
-    throughput(sizedata,totalduration)
-
-    filename = join_file(data_list,filename)
-    """   
-    #Tekst fil skrive ut
-    
-    f = open(filename, 'r')
-    file_content = f.read()
-    print(file_content)
-    
-    
-
-    try:
-        # Åpne bildet
-        img = Image.open(filename)
-
-        # Skriv ut bildet i terminalen
-        img.show()
-
-    except IOError:
-        print("Kan ikke åpne bildefilen")
-
-    """
-        
-
-    
-
 
 
 # ------------------------------------------------------------------------------#
-#                                 End of GBN                                    #
-# ------------------------------------------------------------------------------#
-
-
-
-
-
-
-
-# ------------------------------------------------------------------------------#
-#                                 STOP AND WAIT                -                #
+#                                 STOP AND WAIT                                 #
 # ------------------------------------------------------------------------------#
 
 def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
@@ -383,18 +195,18 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
     #Send data as long as the data_list is not empty
     while sequence_id < len(data_list):
         
+        #Variables when creating packet
         acknowledgement_number = 0
         window = 0 
         flags = 0
 
         #test - drop ack
         if sequence_id == 30 and "loss" in test:
-                print('\n\n Dropper pakke nr 30\n\n')
+                print('\n\n Drops packet nr 30\n\n')
                 sequence_id+=1
                 test = "something else"
                 
-        #else:
-            #creating packet, and sending
+        # Creating packet, and sending
         data = data_list[sequence_id]
         packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
         clientSocket.sendto(packet,serverAddr)
@@ -414,7 +226,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
             if  sequence_id == ack:
                 # parse flags
                 syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-                print('Fikk ack: '+str(ack))
+                print('Got ack: '+str(ack))
 
                 # Check if it has ack flagg marked
                 if ack_flagg == 4:
@@ -423,7 +235,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
             else:
                 #if a packet is dropped, server sneds dupack, and we calculate which packet we send next.
                 sequence_id=ack+1
-                print('\n\n received dupack: ', str(ack) , '\n\n')
+                print('\n\nReceived dupack: ', str(ack) , '\n\n')
                
                 
        
@@ -431,18 +243,25 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
         except timeout:
             
             print("Error: Timeout")
-                
+
+    #Sent all packets for the file, and therefore closing the connection         
     close_connection_client(clientSocket, serverAddr)
+   
+
+
 
 def SAW_Server(filename,serverSocket, test):
     #list with the data
     data_list = [] 
 
+     #Variables for creating packet
     emptydata=b''
     sequence_number = 0
     ack_number = 0
     window = 0
     flagg = 0
+
+    #To help get packets in the right ordedr
     last_ack_number = -1
 
     #Marking start time
@@ -454,9 +273,6 @@ def SAW_Server(filename,serverSocket, test):
     while True:
         #waits for packets
         packet, client_address = serverSocket.recvfrom(2048)
-        
-        #adding the size of the packet to the total data
-        sizedata+=len(packet)
 
         # Extracting the header
         header = packet[:12]
@@ -491,6 +307,8 @@ def SAW_Server(filename,serverSocket, test):
                
                 #Puts the data in the list
                 data_list.append(data)
+                #adding the size of the packet to the total data
+                sizedata+=len(packet)
                 ack_number=seq
                 flagg = 4 # sets the ack flag
                 #creates and send ACK-msg to server
@@ -515,17 +333,11 @@ def SAW_Server(filename,serverSocket, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
-    filename = join_file(data_list,filename)
+     
+    # Takes all the packets in the list and makes the file
+    file = join_file(data_list,filename)
+    return file
 
-    try:
-        # Open picture
-        img = Image.open(filename)
-
-        # Skriv ut bildet i terminalen
-        img.show()
-
-    except IOError:
-        print("Kan ikke åpne bildefilen")
 
 # ------------------------------------------------------------------------------#
 #                           End of stop and wait                                #
@@ -535,119 +347,328 @@ def SAW_Server(filename,serverSocket, test):
 
 
 
+
+
+# ------------------------------------------------------------------------------#
+#                                   GBN                                         #
+# ------------------------------------------------------------------------------#
+
+
+
+def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
+    
+    #Splitting the file into packets for 1460 bytes
+    data_list = file_splitting(filename)
+
+    #Variables to help window
+    base = 0 #First i window and last ack to be recevied
+    next_to_send = 0
+    
+    #Variables to make packet
+    data = data_list[base]
+    seq_number = next_to_send
+    acknowledgement_number = 0
+    flags = 0
+
+    #Loop until received ack for all packets in the list
+    while base < len(data_list):
+
+        #If its packet 44 -> dropped
+        if next_to_send == 44 and "loss" in test: 
+            print('\n\nDrop packet nr 44\n') 
+            next_to_send+=1 #To skip packet
+
+            # set to false so that the skip only happens once.
+            test = " "
+       
+        #If not packet 44, we send normally
+        else:
+            
+            #Sends packets until the window is full, as long as there is more packet to be sent 
+            while next_to_send < base + window and next_to_send < len(data_list):    
+                
+                #Updates seq_number of the packet we are sending
+                seq_number=next_to_send
+
+                # Creating and sending packet
+                data = data_list[seq_number] #getting packets to send in the right order
+                packet = create_packet(seq_number,acknowledgement_number,flags,window,data) 
+                clientSocket.sendto(packet,server_Address) 
+                print(f'Sendt seq: {seq_number}')
+
+                #Updates next packet to send, and seq number
+                next_to_send+=1
+
+            # The window is full - now we wait on ack to move the window
+
+            clientSocket.settimeout(rtt)
+            
+            try:
+                #reveices ack from server
+                ack_from_server, serverAddr = clientSocket.recvfrom(2048)
+                
+                # parsing the header since the ack packet should be with no data
+                seq, ack, flagg, win = parse_header(ack_from_server)
+                print(f'Got ack: {ack}\n')
+
+                # Checks if the acknowledgement is for the right packet. 
+                # The ack should be for the first packet in the window (base)
+                if  base == ack:
+                    # parse flags
+                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+                    # Check if it has ack flagg marked
+                    if ack_flagg == 4:
+                        base+=1 # we move the window
+
+            
+            except timeout:
+                print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
+                next_to_send=base
+    
+    
+    #Sent all packets for the file, and therefore closing the connection
+    close_connection_client(clientSocket, server_Address)
+
+
+
+
+def GBN_server(filename, serverSocket, test): 
+
+    #Creating list receieved data will be added into
+    data_list = []
+
+    #Variables for creating packet
+    emptydata=b''
+    sequence_number = 0
+    ack_number = 0
+    window = 64000
+    flagg = 0
+
+    #Variables to help get packets in the right ordedr
+    last_packet_added = -1
+    last_ack_sent = -1
+
+    #Marking start time for calculating througput
+    starttime=time.time()
+
+    #varibale for amount data received for calculating througput 
+    sizedata=0
+
+    while True:
+
+        #Receive packet
+        packet, client_address = serverSocket.recvfrom(2048)
+
+        # Extracting the header
+        header = packet[:12]
+
+        # parsing the header
+        seq, ack, flagg, win = parse_header(header)
+        print('\nReceived a packet with seq: '+str(seq))
+
+        #parsing the flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+        # check if this is a fin message
+        if fin_flagg == 2:
+            close_connection_server(serverSocket, client_address)
+            break
+
+       
+        
+        # this if checks:    
+        #   1. if packets come in the right order
+        #   2. if the packet has been added before
+        # This if also makes sure each packet in the list has sent an ack before another packet gets added
+        if seq == last_packet_added+1 and last_packet_added == last_ack_sent: 
+            
+            # extract the data from the header
+            data = packet[12:]
+        
+
+            # Puts the data in the list
+            data_list.append(data)
+            print('Added packet nr '+str(seq)+' to the list')
+            #adding the size of the packet to the total data
+            sizedata+=len(packet)
+
+            #update last packet added to the list
+            last_packet_added+=1
+
+        #Else we discard the packet
+        else:
+            print(f"Throws packet {seq} away") 
+        
+        #If packet 21, we skip ack ("Ack got lost")
+        if seq == 21 and "skipack" in test:
+            print('\n\nDroppet ack nr 21\n\n')
+            
+            # set to false so that the skip only happens once.
+            test = " "
+            
+        else:
+            # If check:
+            #       -> If the packet ha been added to the list
+            # If so an ack is sent to inform client that the packet is received
+            if seq <= last_ack_sent+1:
+                
+                # Arguments in ack packet.
+                ack_number = seq
+                flagg = 4 # sets the ack flag
+
+                #creates and send ACK-msg to server
+                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+                serverSocket.sendto(ack_packet, client_address)
+                sequence_number+=1
+
+                last_ack_sent=ack_number
+                
+                print('Sent ack packet: ',ack_number,'\n')
+                
+            
+            #sets test to false so packet number 5 does not get skipped. 
+            
+    #Stops the time
+    endtime = time.time()
+    #Calculating the totalt time
+    totalduration=endtime-starttime
+    
+    #Sends to method that calcultates and prints througput
+    throughput(sizedata,totalduration)
+
+    
+    # Takes all the packets in the list and makes the file
+    file = join_file(data_list,filename)
+    return file
+    
+
+# ------------------------------------------------------------------------------#
+#                                 End of GBN                                    #
+# ------------------------------------------------------------------------------#
+
+
+
+
+
+
+
+
 # ------------------------------------------------------------------------------#
 #                                   SR                                          #
 # ------------------------------------------------------------------------------#
  
-def SR_client(clientSocket, server_Addr, test, file_sent, window_size,rtt):
-    # data list from file
-    raw_datalist = file_splitting(file_sent) # array contains raw data
 
-    formatted_packets_list = []
+def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
+    
+    #Splitting the file into packets for 1460 bytes
+    data_list = file_splitting(filename)
 
-    for i in range(len(raw_datalist)): # create a new list containing different packets
-        formatted_packets_list.append({ # each packet has seq_num, data and ack value
-            "seq_num": i,
-            "data": raw_datalist[i],
-            "acked": False
-        })
+     #Variables to help window
+    base = 0 
+    next_to_send = 0
+    
+    
+    packets_sent = [] #Contians the packets in window which has been send and acked.
 
+     #Variables to make packet
+    seq_number = next_to_send
+    acknowledgement_number = 0
+    flags = 0
 
-    WINDOW_SIZE = window_size # window size
-    base = 0 # base a.k.a "first" packet in window
-    next_to_send = 0 # next packet in window
+    
 
-    clientSocket.settimeout(rtt)
+    # Loop to send packets to the server
+    while base<len(data_list):
 
-    # loop through data list 
-    while base < len(raw_datalist):
-        
-        # and send packets within WINDOW_SIZE
-        while next_to_send < base + WINDOW_SIZE and next_to_send < len(formatted_packets_list): 
+        # Fill the sliding window with packets up to the window size
+        while next_to_send < base + window_size and len(packets_sent) < window_size and next_to_send<len(data_list):
             
-            if "loss" in test and next_to_send == 3: # drop packet test
-                next_to_send += 1
-                print("drop pakke 3")
-                test = "something else"
-                
-            # send all packets in this window
+            #Updating variables in packet we are sending
+            data=data_list[next_to_send]
+            seq_number=next_to_send
+
+            #Creating and sending data
+            packet = create_packet(seq_number,acknowledgement_number,flags,window_size,data)
+
+            #Test - drop packet 10
+            if next_to_send == 10 and "loss" in test:
+                print("drop packet 10")
+                # set to false so that the skip only happens once.
+                test = " "
+            
+            #Else send packet    
             else:
-                # create packet
-                data = formatted_packets_list[next_to_send]["data"]
-                sequence_number = formatted_packets_list[next_to_send]["seq_num"]
-                acknowledgement_number = 0
-                window = 0
-                flagg = 0
-                my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
-                
-                clientSocket.sendto(my_packet, server_Addr) # send packet here
-                print(f"sent packet {sequence_number}")
-                next_to_send += 1 # move to the next packet in window after sending
-        # done sending all packets in that specific window
+                clientSocket.sendto(packet,server_Address) 
+                print(f'Sendt seq: {seq_number}')
+
+
+            #Updating the list of sent packets in winodw, and next seq number
+            packets_sent.append(packet)
+            next_to_send+=1
+            
         
-        # wait for ACKs packets that has been sent
+        #setting timeout
+        clientSocket.settimeout(rtt)
+
+        
         try:
-            print("\n\n")
-            ack_from_server, server_address = clientSocket.recvfrom(2048)
+            #reveices ack from server
+            ack_from_server, serverAddr = clientSocket.recvfrom(2048)
             
-            # parsing header
-            seq, ack, flags, win = parse_header(ack_from_server)
-            print(f"receive ack {ack} from server")
-            for packet in formatted_packets_list: # go through all packets in list
-                if packet["seq_num"] == ack: # if packet has received its own ACK
-                    syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
-                    
-                    # check if this is ACK flagg
-                    if ack_flagg == 4:    
-                        packet["acked"] = True # mark packets as ACKed 
-                        break # continue to check other packets 
+            # parsing the header since the ack packet should be with no data
+            seq, ack, flagg, win = parse_header(ack_from_server)
+
+            # If Ack is for a packet in window
+            if ack >= base and ack < base + window_size:
+                print('Received ACK for packet:', ack)
+                
+                #How we keep track of acked packets in window:
+                        #If packet = None in extra-list, then received Ack for it
+                        #If packet != None in extralist, noe received Ack for it
+
+                #Sets the packet to None in the extra list.
+                packets_sent[ack - base] = None
+                if ack == base:
+                    # Move the sliding window and remove the ACKed packets from the packets list
+                    while packets_sent and packets_sent[0] is None:
+                        #As long as packet is acket (None in extra list):
+                        #We remove it from the list
+                        packets_sent.pop(0)
+                        #And slide the window
+                        base += 1
             
-            # After marking ACKed for packets, we update the base of window to next value
-            while base < len(formatted_packets_list) and formatted_packets_list[base]["acked"]:
-                base += 1
-               
+            #If noe packets in extra list, and base is at the last packet.
+            if not packets_sent and base==len(data_list)-1:
+                # All packets have been ACKed, so exit the loop
+                break
 
-        except timeout: # resend unACKed packets in window
-            for packet in formatted_packets_list[base:base+WINDOW_SIZE]: # Go through the slice of list where from the index of base --> base + WINDOW_SIZE
-                if packet["seq_num"] < next_to_send and not packet["acked"]: # resend packets that have not been ACKed
-                    
-                    # create packet
-                    data = packet["data"]
-                    sequence_number = packet["seq_num"]
-                    acknowledgement_number = 0
-                    window = 0
-                    flagg = 0
-                    my_packet = create_packet(sequence_number, acknowledgement_number, flagg, window, data)
-                    clientSocket.sendto(my_packet, server_Addr)
-                    print(f"\nresend packet {sequence_number} because of unACKed in window") # print out info
-                    
-
-                    # ------------------------------------------------------------------------------------------------------------#
-
-                    # After sending, we have to wait to get ACK message from the newly sent packet before moving to the next window              
-                    ack_from_server, server_address = clientSocket.recvfrom(2048)
-
-                    # parsing header
-                    seq, ack, flags, win = parse_header(ack_from_server)
-                    print(f"receive ack {ack} from server")
-                    for packet in formatted_packets_list: # go through all packets in list
-                        if packet["seq_num"] == ack: # if packet has received its own ACK
-                            syn_flagg, ack_flagg, fin_flagg = parse_flags(flags)
-
-                            # check if this is ACK flagg
-                            if ack_flagg == 4:    
-                                packet["acked"] = True # mark packets as ACKed
-                                base += 1 # update base to the newest value since it has ignored the lost packet            
-                                break # continue to check other packets
         
-    close_connection_client(clientSocket, server_Addr)
+        except timeout:
+            # Handle a timeout by resending the unACKed packets in the sliding window
+            print('Timeout: resending packet: ',base)
+            
+            #Looping through extra list
+            for i in range(len(packets_sent)):
+                pack=packets_sent[i]
+
+                #If pack is None = Not received ack -> Resend
+                if pack is not None:
+                    clientSocket.sendto(pack,server_Address) 
+                    print(f'Resent seq: {base+i} beacuse of UNacked.')
+        
+       
+
+    #Sent all packets for the file, and therefore closing the connection
+    close_connection_client(clientSocket, server_Address)
+    
+            
 
 
 def SR_server(serverSocket, file_name, test):
     #list with the data and buffer
     data_list = [] 
     buffer = []
-    seq_list = []
 
 
     #For sending ack packet
@@ -663,10 +684,9 @@ def SR_server(serverSocket, file_name, test):
     #varibale for amount data received
     sizedata=0
 
-    #helping variable
+    #helping variables
     next_expected_seq = 0
     last_packet_added = -1
-    last_ack_number = -1
 
     #Marking start time
     starttime=time.time()
@@ -699,15 +719,15 @@ def SR_server(serverSocket, file_name, test):
 
         #If its the packet in the right order -> add to main list
         elif seq == last_packet_added+1:
+            
+            #Add to the MAIN list
             data_list.append(data)
-            print(f'Packet {seq} added to the list')
+            print(f'Packet {seq} added to the LIST')
             last_packet_added+=1
 
             #adding the size of the packet to the total data
             sizedata+=len(packet)
 
-
-            seq_list.append(seq)
 
             # Arguments in ack packet.
             ack_number = seq
@@ -716,14 +736,13 @@ def SR_server(serverSocket, file_name, test):
             #creates and send ACK-msg to server
             ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
             serverSocket.sendto(ack_packet, client_address)
+            print(f'Sent ack {ack_number}')
+
+            #Updating helping variables
             sequence_number+=1
             next_expected_seq+=1
 
-
-            print(f'Sent ack {ack_number}')
-
             #If buffer has packets in it
-            
             if len(buffer) > 0:
                 
                 #Loops through all elements in buffer
@@ -734,29 +753,22 @@ def SR_server(serverSocket, file_name, test):
                     if p.seq == last_packet_added+1:
                         buffer.remove(p)
                         data_list.append(p.data)
-                        seq_list.append(p.seq)
-                        print(f'Packet {p.seq} added to the list')
+                        print(f'Packet {p.seq} added to the LIST')
                         last_packet_added+=1
                     else:
-                        i+=1
-                    print(f'Buffer has {len(buffer)} elements')
-            #print(f"Current seq list: {seq_list}")
-                    
+                        i+=1  
             
-            
-        #If out of order -> add to buffer
+        #If pakcet is out of order -> add to buffer
         elif seq > next_expected_seq:
 
+            #Creates an packet object, which is added into the buffer
             pack=One_Packet(seq,data)
             buffer.append(pack)
+            print(f'Packet {seq} added to the BUFFER')
 
             #adding the size of the packet to the total data
             sizedata+=len(packet)
 
-
-
-            print(f'Packet {seq} added to the buffer')
-            
             # Arguments in ack packet.
             ack_number = seq
             flagg = 4 # sets the ack flag
@@ -769,7 +781,7 @@ def SR_server(serverSocket, file_name, test):
             print(f'Sent ack {ack_number}')
 
 
-        #If the packet already has been added to the 
+        # In case of duplicates: if the packet already has been added to the
         elif seq < last_packet_added:
             
             # Arguments in ack packet.
@@ -790,33 +802,13 @@ def SR_server(serverSocket, file_name, test):
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
-    print('Total data: ',sizedata)
-    print('Total time: ',totalduration)
+    
 
     filename = join_file(data_list,file_name)
-    try:
-        # Open picture
-        img = Image.open(filename)
+    return filename
 
-        # Skriv ut bildet i terminalen
-        img.show()
 
-    except IOError:
-        print("Kan ikke åpne bildefilen")
-    
-    """
-    try:
-        # Open picture
-        img = Image.open(filename)
-
-        # Skriv ut bildet i terminalen
-        img.show()
-
-    except IOError:
-        print("Kan ikke åpne bildefilen")
-    
-    """
-
+     
 
 # ------------------------------------------------------------------------------#
 #                                END OF SR                                      #
@@ -873,11 +865,11 @@ def connection_establishment_server(serverSocket, modus, filename, test):
                 print("got ACK from client!") # CAN DELETE
                 print("Connection established with ", client_Addr)
                 if 'GBN' in modus:
-                    GBN_server(filename,serverSocket, test)
+                    file = GBN_server(filename,serverSocket, test)
                 if "SAW" in modus:
-                    SAW_Server(filename, serverSocket,  test)
+                    file = SAW_Server(filename, serverSocket,  test)
                 elif "SR" in modus:
-                    SR_server(serverSocket, filename, test)
+                    file = SR_server(serverSocket, filename, test)
             else:
                 print("Error: ACK not received!")
 
@@ -885,6 +877,8 @@ def connection_establishment_server(serverSocket, modus, filename, test):
             print("Error, Ack_number does not match")
     else:
         print("Error: SYN not received!")
+    
+    return file
 
     
 
@@ -905,7 +899,7 @@ def server_main(bind_IPadress, port, modus, filename, test):
     print("Server is ready to receive!!!")
     
     #sending socket to method thats establishing connection with client.
-    connection_establishment_server(serverSocket, modus, filename, test)
+    return connection_establishment_server(serverSocket, modus, filename, test)
         
 
             
@@ -1082,6 +1076,30 @@ elif args.file is None: #
 
 else: # Pass the conditions. This is when one of the moduses is activated
     if args.server:
-        server_main(args.bind, args.port, args.modus, args.file, args.test)
+        file = server_main(args.bind, args.port, args.modus, args.file, args.test)
     else:
         client_main(args.serverip, args.port, args.modus, args.file, args.test, args.window,args.bonus)
+
+
+#To open a text file og png file:
+"""   
+    #Open text file:
+    f = open(file, 'r')
+    file_content = f.read()
+    print(file_content)
+    
+    
+
+    #Open png file: 
+    # Need Pillow install (Look at read.me under Install) 
+    try:
+        # Åpne bildet
+        img = Image.open(file)
+
+        # Skriv ut bildet i terminalen
+        img.show()
+
+    except IOError:
+        print("Kan ikke åpne bildefilen")
+
+    """
