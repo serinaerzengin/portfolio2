@@ -178,6 +178,174 @@ def close_connection_server(serverSocket, client_addr):
 
 
 
+
+
+# ------------------------------------------------------------------------------#
+#                                 STOP AND WAIT                                 #
+# ------------------------------------------------------------------------------#
+
+def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
+    #Data_list contains data packets
+    data_list = file_splitting(filename)
+
+    #starts at 0 
+    sequence_id = 0
+
+   
+    #Send data as long as the data_list is not empty
+    while sequence_id < len(data_list):
+        
+        #Variables when creating packet
+        acknowledgement_number = 0
+        window = 0 
+        flags = 0
+
+        #test - drop ack
+        if sequence_id == 30 and "loss" in test:
+                print('\n\n Drops packet nr 30\n\n')
+                sequence_id+=1
+                test = "something else"
+                
+        # Creating packet, and sending
+        data = data_list[sequence_id]
+        packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
+        clientSocket.sendto(packet,serverAddr)
+        print('sent packet ', str(sequence_id))
+
+        #timeout
+        clientSocket.settimeout(rtt)
+        try:    
+            #reveices packet from server
+            ack_from_server, serverAddr = clientSocket.recvfrom(2048)
+
+            # parsing the header since the ack packet should be with no data
+            seq, ack, flagg, win = parse_header(ack_from_server)
+            
+                
+            # Checks if the acknowledgement is for the right packet
+            if  sequence_id == ack:
+                # parse flags
+                syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+                print('Got ack: '+str(ack))
+
+                # Check if it has ack flagg marked
+                if ack_flagg == 4:
+                    #Sequence increases whit 1 if we received the rigth packet
+                    sequence_id+=1
+            else:
+                #if a packet is dropped, server sneds dupack, and we calculate which packet we send next.
+                sequence_id=ack+1
+                print('\n\nReceived dupack: ', str(ack) , '\n\n')
+               
+                
+       
+       #if timeout, the sequence number should not be changed. We send packet
+        except timeout:
+            
+            print("Error: Timeout")
+
+    #Sent all packets for the file, and therefore closing the connection         
+    close_connection_client(clientSocket, serverAddr)
+   
+
+
+
+def SAW_Server(filename,serverSocket, test):
+    #list with the data
+    data_list = [] 
+
+     #Variables for creating packet
+    emptydata=b''
+    sequence_number = 0
+    ack_number = 0
+    window = 0
+    flagg = 0
+
+    #To help get packets in the right ordedr
+    last_ack_number = -1
+
+    #Marking start time
+    starttime=time.time()
+
+    #varibale for amount data received
+    sizedata=0
+
+    while True:
+        #waits for packets
+        packet, client_address = serverSocket.recvfrom(2048)
+
+        # Extracting the header
+        header = packet[:12]
+
+        # parsing the header
+        seq, ack, flagg, win = parse_header(header)
+
+        #parsing the flags
+        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
+
+        # check if this is a fin message
+        if fin_flagg == 2:
+            close_connection_server(serverSocket, client_address)
+            break
+
+        #checks to see if packets come in the right order.
+        if seq == (last_ack_number+1): 
+            # extract the data from the header
+            data = packet[12:]
+            print('Received packet nr: ', str(seq))
+
+           
+
+            # If at packet nr. 13, we skip sending the ack (the ack got lost).
+            if seq == 13 and "skipack" in test:
+                print('\n\nDroppet ack nr 13\n\n')
+                # set to false so that the skip only happens once.
+                test = "something else"
+                
+            
+            else:
+               
+                #Puts the data in the list
+                data_list.append(data)
+                #adding the size of the packet to the total data
+                sizedata+=len(packet)
+                ack_number=seq
+                flagg = 4 # sets the ack flag
+                #creates and send ACK-msg to server
+                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+                serverSocket.sendto(ack_packet, client_address)
+                last_ack_number+=1
+                sequence_number+=1
+                print('Sent ack packet: ', str(ack_number))
+
+        else:
+            ack_number=last_ack_number
+            flagg = 4 # sets the ack flag
+            #send ack  med lastacknumber
+            #creates and send ACK-msg to server
+            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
+            serverSocket.sendto(ack_packet, client_address)
+    
+    #Calculating the time
+    endtime = time.time()
+    totalduration=endtime-starttime
+    
+    #Sends to method that calcultates and prints througput
+    throughput(sizedata,totalduration)
+
+     
+    # Takes all the packets in the list and makes the file
+    filename = join_file(data_list,filename)
+
+
+# ------------------------------------------------------------------------------#
+#                           End of stop and wait                                #
+# ------------------------------------------------------------------------------#
+
+
+
+
+
 # ------------------------------------------------------------------------------#
 #                                   GBN                                         #
 # ------------------------------------------------------------------------------#
@@ -380,170 +548,6 @@ def GBN_server(filename, serverSocket, test):
 
 
 
-
-
-
-# ------------------------------------------------------------------------------#
-#                                 STOP AND WAIT                -                #
-# ------------------------------------------------------------------------------#
-
-def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
-    #Data_list contains data packets
-    data_list = file_splitting(filename)
-
-    #starts at 0 
-    sequence_id = 0
-
-   
-    #Send data as long as the data_list is not empty
-    while sequence_id < len(data_list):
-        
-        #Variables when creating packet
-        acknowledgement_number = 0
-        window = 0 
-        flags = 0
-
-        #test - drop ack
-        if sequence_id == 30 and "loss" in test:
-                print('\n\n Drops packet nr 30\n\n')
-                sequence_id+=1
-                test = "something else"
-                
-        # Creating packet, and sending
-        data = data_list[sequence_id]
-        packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
-        clientSocket.sendto(packet,serverAddr)
-        print('sent packet ', str(sequence_id))
-
-        #timeout
-        clientSocket.settimeout(rtt)
-        try:    
-            #reveices packet from server
-            ack_from_server, serverAddr = clientSocket.recvfrom(2048)
-
-            # parsing the header since the ack packet should be with no data
-            seq, ack, flagg, win = parse_header(ack_from_server)
-            
-                
-            # Checks if the acknowledgement is for the right packet
-            if  sequence_id == ack:
-                # parse flags
-                syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-                print('Got ack: '+str(ack))
-
-                # Check if it has ack flagg marked
-                if ack_flagg == 4:
-                    #Sequence increases whit 1 if we received the rigth packet
-                    sequence_id+=1
-            else:
-                #if a packet is dropped, server sneds dupack, and we calculate which packet we send next.
-                sequence_id=ack+1
-                print('\n\nReceived dupack: ', str(ack) , '\n\n')
-               
-                
-       
-       #if timeout, the sequence number should not be changed. We send packet
-        except timeout:
-            
-            print("Error: Timeout")
-
-    #Sent all packets for the file, and therefore closing the connection         
-    close_connection_client(clientSocket, serverAddr)
-   
-
-
-
-def SAW_Server(filename,serverSocket, test):
-    #list with the data
-    data_list = [] 
-
-     #Variables for creating packet
-    emptydata=b''
-    sequence_number = 0
-    ack_number = 0
-    window = 0
-    flagg = 0
-
-    #To help get packets in the right ordedr
-    last_ack_number = -1
-
-    #Marking start time
-    starttime=time.time()
-
-    #varibale for amount data received
-    sizedata=0
-
-    while True:
-        #waits for packets
-        packet, client_address = serverSocket.recvfrom(2048)
-
-        # Extracting the header
-        header = packet[:12]
-
-        # parsing the header
-        seq, ack, flagg, win = parse_header(header)
-
-        #parsing the flags
-        syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-
-        # check if this is a fin message
-        if fin_flagg == 2:
-            close_connection_server(serverSocket, client_address)
-            break
-
-        #checks to see if packets come in the right order.
-        if seq == (last_ack_number+1): 
-            # extract the data from the header
-            data = packet[12:]
-            print('Received packet nr: ', str(seq))
-
-           
-
-            # If at packet nr. 13, we skip sending the ack (the ack got lost).
-            if seq == 13 and "skipack" in test:
-                print('\n\nDroppet ack nr 13\n\n')
-                # set to false so that the skip only happens once.
-                test = "something else"
-                
-            
-            else:
-               
-                #Puts the data in the list
-                data_list.append(data)
-                #adding the size of the packet to the total data
-                sizedata+=len(packet)
-                ack_number=seq
-                flagg = 4 # sets the ack flag
-                #creates and send ACK-msg to server
-                ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
-                serverSocket.sendto(ack_packet, client_address)
-                last_ack_number+=1
-                sequence_number+=1
-                print('Sent ack packet: ', str(ack_number))
-
-        else:
-            ack_number=last_ack_number
-            flagg = 4 # sets the ack flag
-            #send ack  med lastacknumber
-            #creates and send ACK-msg to server
-            ack_packet = create_packet(sequence_number,ack_number,flagg,window,emptydata)
-            serverSocket.sendto(ack_packet, client_address)
-    
-    #Calculating the time
-    endtime = time.time()
-    totalduration=endtime-starttime
-    
-    #Sends to method that calcultates and prints througput
-    throughput(sizedata,totalduration)
-
-     
-    # Takes all the packets in the list and makes the file
-    filename = join_file(data_list,filename)
-
-
-# ------------------------------------------------------------------------------#
-#                           End of stop and wait                                #
-# ------------------------------------------------------------------------------#
 
 
 
