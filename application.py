@@ -185,21 +185,24 @@ def close_connection_server(serverSocket, client_addr):
 
 
 def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
+    
+    #Splitting the file into packets for 1460 bytes
     data_list = file_splitting(filename)
 
+    #Variables to help window
     base = 0 #First i window and last ack to be recevied
     next_to_send = 0
     
-    
+    #Variables to make packet
     data = data_list[base]
     seq_number = next_to_send
     acknowledgement_number = 0
     flags = 0
-    datasize=0
 
-    while base < len(data_list): #MÅ HA NOE ANNET ENN TRUE?
 
-         #If packet 44 its dropped and skip one round
+    while base < len(data_list):
+
+        #If its packet 44 -> dropped
         if next_to_send == 44 and "loss" in test: ##SJEKK OM DET GÅR MED str(test) og at den da ikke trenger å ha default i argumentet
             print('\n\nDropper pakke nr 44\n') #SØRG FOR AT DEN FORTSATT SENDER OG IKKE HOPPER OVER DENNE SENDINGEN
             next_to_send+=1
@@ -209,19 +212,17 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
         else:
             
             #Sends packets until the window is full, as long as there is more packet to be sent 
-            while next_to_send < base + window and next_to_send < len(data_list):
-
-            
-                #Ssend packet    
+            while next_to_send < base + window and next_to_send < len(data_list):    
                 
+                #Updates seq_number of the packet we are sending
                 seq_number=next_to_send
+
                 # Creating and sending packet
                 data = data_list[seq_number] #getting packets to send in the right order
                 packet = create_packet(seq_number,acknowledgement_number,flags,window,data) 
                 clientSocket.sendto(packet,server_Address) 
                 print(f'Sendt seq: {seq_number}')
 
-                datasize+=len(packet)
                 #Updates next packet to send, and seq number
                 next_to_send+=1
 
@@ -235,7 +236,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 
                 # parsing the header since the ack packet should be with no data
                 seq, ack, flagg, win = parse_header(ack_from_server)
-                print(f'Fikk ack: {ack}\n')
+                print(f'Got ack: {ack}\n')
 
                 # Checks if the acknowledgement is for the right packet. 
                 # The ack should be for the first packet in the window (base)
@@ -247,49 +248,50 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                     if ack_flagg == 4:
                         base+=1 # we move the window
 
-                
-
+            
             except timeout:
                 print(f"\nError: Timeout because never got ack of {base}\nStarting to send from packet {base}.\n\n")
                 next_to_send=base
     
-    print('Lengden av data listen: '+str(len(data_list)))
-    print('Lengden av datafilen: ',datasize)
+    
     close_connection_client(clientSocket, server_Address)
 
 
 
 
 def GBN_server(filename, serverSocket, test): 
+
+    #Creating list receieved data will be added into
     data_list = []
 
+    #Variables for creating packet
     emptydata=b''
     sequence_number = 0
     ack_number = 0
     window = 64000
     flagg = 0
+
+    #Variables to help get packets in the right ordedr
     last_packet_added = -1
     last_ack_sent = -1
 
-    #Marking start time
+    #Marking start time for calculating througput
     starttime=time.time()
 
-    #varibale for amount data received
+    #varibale for amount data received for calculating througput 
     sizedata=0
 
     while True:
 
+        #Receive packet
         packet, client_address = serverSocket.recvfrom(2048)
 
-        
-        
         # Extracting the header
         header = packet[:12]
 
         # parsing the header
         seq, ack, flagg, win = parse_header(header)
         print('\nReceived a packet with seq: '+str(seq))
-        print('\n\n\nflags: ',flagg)
 
         #parsing the flags
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
@@ -300,10 +302,10 @@ def GBN_server(filename, serverSocket, test):
             break
 
        
-        # A packet should not be added if the ack of the pacet before got sent.
-        # therefore this if checks:    
-        #   1. to se if packets come in the right order
-        #   2. to se if the packet has been added before
+        
+        # this if checks:    
+        #   1. if packets come in the right order
+        #   2. if the packet has been added before
         # This if also makes sure each packet in the list has sent an ack before another packet gets added
         if seq == last_packet_added+1 and last_packet_added == last_ack_sent: 
             
@@ -320,19 +322,20 @@ def GBN_server(filename, serverSocket, test):
             #update last packet added to the list
             last_packet_added+=1
 
-         # If at packet nr. 13, we skip sending the ack (the ack got lost).
+        #Else we discard the packet
         else:
-            print(f"Throws packet {seq} away")
+            print(f"Throws packet {seq} away") 
         
+        #If packet 21, we skip ack ("Ack got lost")
         if seq == 21 and "skipack" in test:
             print('\n\nDroppet ack nr 21\n\n')
             
             # set to false so that the skip only happens once.
-            test = "something else"
+            test = " "
             
         else:
-            # Check to make sure to send ack if:
-                # If the packet already has been recv and added to the list
+            # If check:
+            #       -> If the packet ha been added to the list
             # If so an ack is sent to inform client that the packet is received
             if seq <= last_ack_sent+1:
                 
@@ -347,42 +350,23 @@ def GBN_server(filename, serverSocket, test):
 
                 last_ack_sent=ack_number
                 
-                print('Sent ack packet: '+str(ack_number))
-                print('')
+                print('Sent ack packet: ',ack_number,'\n')
+                
             
             #sets test to false so packet number 5 does not get skipped. 
             
-    #Calculating the time
+    #Stops the time
     endtime = time.time()
+    #Calculating the totalt time
     totalduration=endtime-starttime
     
     #Sends to method that calcultates and prints througput
     throughput(sizedata,totalduration)
 
-    print('Total data: ',sizedata,'\nTotal time: ',totalduration)
-    print('Lengden av listen: ',len(data_list))
-
+    
+    # Takes all the packets in the list and makes the file
     filename = join_file(data_list,filename)
-    """   
-    #Tekst fil skrive ut
     
-    f = open(filename, 'r')
-    file_content = f.read()
-    print(file_content)
-    
-    
-
-    try:
-        # Åpne bildet
-        img = Image.open(filename)
-
-        # Skriv ut bildet i terminalen
-        img.show()
-
-    except IOError:
-        print("Kan ikke åpne bildefilen")
-
-    """
         
 
     
