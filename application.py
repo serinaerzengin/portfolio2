@@ -254,6 +254,7 @@ def GBN_client(window, filename, clientSocket, server_Address, test, rtt):
                 next_to_send=base
     
     
+    #Sent all packets for the file, and therefore closing the connection
     close_connection_client(clientSocket, server_Address)
 
 
@@ -397,18 +398,18 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
     #Send data as long as the data_list is not empty
     while sequence_id < len(data_list):
         
+        #Variables when creating packet
         acknowledgement_number = 0
         window = 0 
         flags = 0
 
         #test - drop ack
         if sequence_id == 30 and "loss" in test:
-                print('\n\n Dropper pakke nr 30\n\n')
+                print('\n\n Drops packet nr 30\n\n')
                 sequence_id+=1
                 test = "something else"
                 
-        #else:
-            #creating packet, and sending
+        # Creating packet, and sending
         data = data_list[sequence_id]
         packet = create_packet(sequence_id,acknowledgement_number,flags,window,data)
         clientSocket.sendto(packet,serverAddr)
@@ -428,7 +429,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
             if  sequence_id == ack:
                 # parse flags
                 syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg)
-                print('Fikk ack: '+str(ack))
+                print('Got ack: '+str(ack))
 
                 # Check if it has ack flagg marked
                 if ack_flagg == 4:
@@ -437,7 +438,7 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
             else:
                 #if a packet is dropped, server sneds dupack, and we calculate which packet we send next.
                 sequence_id=ack+1
-                print('\n\n received dupack: ', str(ack) , '\n\n')
+                print('\n\nReceived dupack: ', str(ack) , '\n\n')
                
                 
        
@@ -445,7 +446,8 @@ def SAW_Client(filename,clientSocket,serverAddr, test,rtt):
         except timeout:
             
             print("Error: Timeout")
-                
+
+    #Sent all packets for the file, and therefore closing the connection         
     close_connection_client(clientSocket, serverAddr)
    
 
@@ -557,6 +559,8 @@ def SAW_Server(filename,serverSocket, test):
  
 
 def SR_client(clientSocket, server_Address, test, filename, window_size,rtt):
+    
+     #Splitting the file into packets for 1460 bytes
     data_list = file_splitting(filename)
 
     base = 0 #First i window and last ack to be recevied
