@@ -149,7 +149,8 @@ def close_connection_client(clientSocket, server_Addr):
         close_msg, serverAddr = clientSocket.recvfrom(2048) # Receive packet
         seq, ack, flagg, win = parse_header(close_msg) # Parse header to get flags
         syn_flagg, ack_flagg, fin_flagg = parse_flags(flagg) #Parse flags to get fin and ack flag
-        if ack_flagg == 4: # check if this is FIN-ACK message 
+
+        if ack_flagg + fin_flagg == 6:  # check if this is FIN-ACK message 
             print("Close connection from client!!!")
     except error:
         print("Can not close at the moment!!!")
@@ -157,12 +158,13 @@ def close_connection_client(clientSocket, server_Addr):
 
 #Function to close connection server side
 def close_connection_server(serverSocket, client_addr):
-    # create ACK
+    # Variables to create FIN-ACK
     sequence_number = 0
     acknowledgment_number = 0
     window = 64000
-    flagg = 4 # ACK flag sets here, and the decimal is
-    # and send ACK back to client for confirmation
+    flagg = 6 # FIN and ACK is set to 1 
+
+    # Create packet and send FIN-ACK back to client for confirmation
     ACK_packet = create_packet(sequence_number, acknowledgment_number, flagg, window, b'')
     serverSocket.sendto(ACK_packet, client_addr) # send SYN ACK to clie
     
