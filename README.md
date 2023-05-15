@@ -74,7 +74,22 @@ python3 application.py -c -I 127.0.0.1 -p 8088 -r SR -w 10 -t loss -f hei.JPG
 ---
 
 ## BONUS
+If you want a more efficient tramsission, you could use the -B flag.\
+This flag changes the timeout from default 0.5s ec, to 4 times roundtriptime. This makes the transmission more efficient in scenarios where timeout is triggered.
 
+### Prerequisites
+To be able to get the effect of -B, you will need to:
+1. Install ping3. Instructions below
+2. Have an IP valid IP-address to be able to calculate the Round Trip Time with ping
+
+If both of these are fufilled, then you will get the effect.
+
+### Running Bonus
+The Bonus flag is run from the client, since this is the only place we are able to calculate the round trip time between the client and host. 
+```
+python3 application.py -c -I 127.0.0.1 -p 8088 -r SR  -t loss -f hei.JPG -B
+```
+\The argument made from -B is a boolean, therefore its no need for data after the flag. Its enoguh with the flag alone.
 
 ## Install
 To be able to run out application.py you need to have the following installed:
