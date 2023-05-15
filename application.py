@@ -1062,6 +1062,8 @@ parser.add_argument('-t','--test', type=str, default="", help='use this flag to 
 #Parse the arguments
 args = parser.parse_args()
 
+#Making a file variable for opening
+file = None 
 
 if args.server is False and args.client is False: # if none of -c or -s is used
     print("Error: you must run either in server or client mode")
@@ -1082,24 +1084,27 @@ else: # Pass the conditions. This is when one of the moduses is activated
 
 
 #To open a text file og png file:
-"""   
-#Open text file:
-f = open(file, 'r')
-file_content = f.read()
-print(file_content)
+if args.server:
+    
+    """   
+    #Open text file:
+    f = open(file, 'r')
+    file_content = f.read()
+    print(file_content)
 
 
+    
+    #Open png file: 
+    # Need Pillow install (Look at read.me under Install) 
+    try:
+        # Åpne bildet
+        img = Image.open(file)
 
-#Open png file: 
-# Need Pillow install (Look at read.me under Install) 
-try:
-    # Åpne bildet
-    img = Image.open(file)
+        # Skriv ut bildet i terminalen
+        img.show()
 
-    # Skriv ut bildet i terminalen
-    img.show()
-
-except IOError:
-    print("Kan ikke åpne bildefilen")
-
+    except IOError:
+        print("Kan ikke åpne bildefilen")
     """
+
+        
