@@ -93,7 +93,7 @@ The Bonus flag is run from the client, since this is the only place we are able 
 ```
 python3 application.py -c -I 127.0.0.1 -p 8088 -r SR  -t loss -f hei.JPG -B
 ```
-\The argument made from -B is a boolean, therefore its no need for data after the flag. Its enoguh with the flag alone.
+The argument made from -B is a boolean, therefore its no need for data after the flag. Its enoguh with the flag alone.
 
 ## Install
 To be able to run out application.py you need to have the following installed:
